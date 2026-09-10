@@ -1,60 +1,74 @@
-# Introduction
-OOP WEBSHELL LOL<br>
-This webshell are programmed and modified by Eagle Eye<br>
-Github : https://github.com/EagleTube<br>
-Youtube : https://www.youtube.com/c/EagleTube1337<br>
- Referred : ivan-sincek(revershell) | 0x5a455553(PermChg)<br>
+# DragonForceShell (DFS)
 
-# Disclaimer
-This shell are used for study purpose<br>
-Please do not harm any site using this webshell<br>
-Any damage done to the website are with your own responsibilities
+A feature-rich, object-oriented PHP webshell with cross-platform privilege escalation auditing, file management, database tools, and network scanning capabilities.
 
-# DFS
-DragonForceShell
-Initial release of DragonForceShell(DFS) Version 2.5<br>
-Password: DF_Malaysia@1337$
-<br>
+**Author:** Eagle Eye
 
-# DFSV2.1 Compatibility
-PHP7 and above<br>
-Enabled allow_url_open
+- GitHub: <https://github.com/EagleTube>
+- YouTube: <https://www.youtube.com/c/EagleTube1337>
 
-# Features
-Symlink Manual to Auto<br>
-Cpanel/WHM Bruteforce<br>
-MySQL Access<br>
-OpenSSL Encryption<br>
-Self Destruct<br>
-ReverseShell<br>
-Command<br>
-Mass Deface<br>
-Disk Available<br>
-Unzip and Zip<br>
-Permission Code(Chmod + Recursive)<br>
-Mass Deletion (Recursive)<br>
-NEW v2.3: Local Network IP Scanner (?dfaction=netscan)<br>
-NEW v2.3: Port Scanner w/ banner grab (?dfaction=portscan)<br>
-NEW v2.3: Recursive File Search (?dfaction=search)<br>
-NEW v2.3: Copy / Move / File Info (md5+sha1) / PHPInfo<br>
-NEW v2.5: Auto LPE (Linux + Windows) — Cross-platform privilege escalation audit<br>
-  Linux: SUID/SGID (GTFOBins), capabilities, kernel CVEs (DirtyPipe/PwnKit/DirtyCOW/etc.), writable passwd/shadow, sudo audit, Docker/LXC/K8s, cron, NFS, systemd services, Polkit<br>
-  Windows: token privileges, unquoted service paths, writable service binaries, AlwaysInstallElevated, UAC bypass, autorun keys, scheduled tasks, kernel CVEs (PrintNightmare/HiveNightmare/etc.), stored credentials, DLL hijacking<br>
-  Modular: each technique reports status (found/not_found/skipped) with evaluation log<br>
+Referred: ivan-sincek (reverse shell) | 0x5a455553 (PermChg)
 
-# Images
-Example run on window<br>
-<img src='https://github.com/EagleTube/DFS/blob/main/images/Screenshot_1.png'><br><br>
-Directory Listing<br>
-<img src='https://github.com/EagleTube/DFS/blob/main/images/Screenshot_2.png'><br><br>
-Area of of create file and upload<br>
-<img src='https://github.com/EagleTube/DFS/blob/main/images/Screenshot_3.png'><br><br>
-MySQL Database simple management<br>
-<img src='https://github.com/EagleTube/DFS/blob/main/images/Screenshot_4.png'><br><br>
-Cpanel/WHM Bruteforcer<br>
-<img src='https://github.com/EagleTube/DFS/blob/main/images/Screenshot_5.png'><br><br>
+## Disclaimer
 
-# Upcoming Features (V2.6)
-UDP scanning + service fingerprinting
-Ajax terminal + file editor with line numbers
-Additional kernel CVEs and Windows exploit modules
+This shell is intended for **study and authorized security testing purposes only**. Please do not use it to harm any site. Any damage done to a website using this tool is your own responsibility.
+
+## Compatibility
+
+- PHP 7 and above
+- `allow_url_open` enabled
+
+## Default Password
+
+```
+DF_Malaysia@1337$
+```
+
+## Features
+
+- **Symlink** — Manual to Auto
+- **Cpanel/WHM Brute-force**
+- **MySQL Access**
+- **OpenSSL Encryption**
+- **Self Destruct**
+- **Reverse Shell**
+- **Command Terminal**
+- **Mass Deface**
+- **Disk Available**
+- **Unzip / Zip**
+- **Permission Code** — Chmod + Recursive
+- **Mass Deletion** — Recursive
+- **Network IP Scanner** — Local /24 TCP discovery (`?dfaction=netscan`)
+- **Port Scanner** — Banner grab + service guess (`?dfaction=portscan`)
+- **File Search** — Recursive keyword/extension search (`?dfaction=search`)
+- **Copy / Move / File Info (MD5+SHA1) / PHPInfo**
+- **Auto LPE** — Cross-platform privilege escalation audit (Linux + Windows)
+
+  > **Linux:** SUID/SGID (GTFOBins), capabilities, kernel CVEs (DirtyPipe/PwnKit/DirtyCOW/etc.), writable passwd/shadow, sudo audit, Docker/LXC/K8s, cron, NFS, systemd services, Polkit
+  >
+  > **Windows:** Token privileges, unquoted service paths, writable service binaries, AlwaysInstallElevated, UAC bypass, autorun keys, scheduled tasks, kernel CVEs (PrintNightmare/HiveNightmare/etc.), stored credentials, DLL hijacking
+  >
+  > Each technique reports status (found/not_found/skipped) with a full evaluation log.
+
+## Screenshots
+
+**Windows example run:**
+![Windows example](images/Screenshot_1.png)
+
+**Directory listing:**
+![Directory listing](images/Screenshot_2.png)
+
+**File creation and upload area:**
+![File creation area](images/Screenshot_3.png)
+
+**MySQL database management:**
+![MySQL management](images/Screenshot_4.png)
+
+**Cpanel/WHM Brute-forcer:**
+![Cpanel brute-force](images/Screenshot_5.png)
+
+## Upcoming Features (V2.6)
+
+- UDP scanning + service fingerprinting
+- Ajax terminal + file editor with line numbers
+- Additional kernel CVEs and Windows exploit modules
