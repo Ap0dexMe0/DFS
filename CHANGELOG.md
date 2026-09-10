@@ -1,37 +1,33 @@
 # Changelog
 
-All notable changes to DragonForceShell (DFS) are documented here, with the newest versions listed first.
-
 ## DFS V2.5 — Cross-Platform Auto LPE
 
-- **FULL REWRITE** of Auto LPE — now supports both Linux AND Windows
-- Automatic OS detection (Linux/Windows) with architecture and kernel/build enumeration
-- Modular technique architecture: each LPE check is self-contained and extensible
-- Technique evaluation log: shows which techniques were checked, found, skipped, and why
+- FULL REWRITE of Auto LPE — now works on both Linux AND Windows
+- Auto OS detection (Linux/Windows) with arch and kernel/build info
+- Modular technique architecture — each LPE check is self-contained and extensible
+- Evaluation log showing what was checked, found, skipped, and why
 - Findings sorted by severity (critical → high → medium → info)
 - Removed "New version available" popup notification
 
-**Linux techniques (12 modules):**
-
-- SUID/SGID binary enumeration with GTFOBins cross-reference
+Linux techniques (12 modules):
+- SUID/SGID binary enum with GTFOBins cross-ref
 - Linux capabilities scan (getcap) with dangerous cap detection
 - Kernel CVE detection: DirtyPipe, PwnKit, DirtyCOW, Baron Samedit, OverlayFS, StackRot, DirtyCred, GameOver(lay), nf_tables, vsock
 - /etc/passwd writable check, /etc/shadow readable check with hash extraction
-- Sudo configuration audit (NOPASSWD, ALL, dangerous commands → GTFOBins)
+- Sudo config audit (NOPASSWD, ALL, dangerous cmds → GTFOBins)
 - Writable system paths (cron, systemd, ld.so.preload, environment)
 - Docker/LXC/K8s container detection with privileged container escape vectors
-- Cron job enumeration with writable cron detection
+- Cron job enum with writable cron detection
 - NFS no_root_squash export detection
 - Writable systemd service files
 - PATH/LD_PRELOAD injection vectors
 - Polkit (PwnKit) vulnerability detection
 
-**Windows techniques (10 modules):**
-
-- Token privilege enumeration (SeImpersonate, SeDebug, SeBackup, SeRestore, etc.)
+Windows techniques (10 modules):
+- Token privilege enum (SeImpersonate, SeDebug, SeBackup, SeRestore, etc.)
 - Unquoted service path detection
 - Writable service binary detection with ACL analysis
-- AlwaysInstallElevated registry check (both HKCU + HKLM)
+- AlwaysInstallElevated registry check (HKCU + HKLM)
 - UAC bypass opportunity detection
 - Registry autorun key writability check
 - Writable scheduled task binary detection
@@ -56,21 +52,21 @@ All notable changes to DragonForceShell (DFS) are documented here, with the newe
 
 ## DFS V2.3
 
-- **NEW:** Local network IP scanner (`?dfaction=netscan`, /24 TCP discovery, auto-detect base)
-- **NEW:** Port scanner (`?dfaction=portscan`, ranges like 1-1000, banner grab + service guess)
-- **NEW:** File search (`?dfaction=search`, recursive keyword/ext, 500-result cap)
-- **NEW:** Copy/Move (`?dfaction=copy/move`) + File info (`?dfaction=info`) + PHPInfo (`?dfaction=phpinfo`)
-- **IMPROVE:** Recursive delete/chmod (fixes rmdir failing on non-empty dirs), basename-safe mkdir/mkfile/rename/mass
-- **IMPROVE:** Command terminal shows cwd + active executor, escaped output, autofocus
-- **IMPROVE:** Offline-safe templates (local fallback if GitHub unreachable), 3-4s fetch timeouts
-- **IMPROVE:** Responsive CSS + scantable/fileinfo styles, new nav items NetScan/PortScan/Search/PHPInfo
-- **SECURITY:** htmlspecialchars on filenames/paths/cmd/crack/mail, escapeshellarg on symlink ln -s, ZipSlip block, __FILE__ self-destruct fix, email validation + header-injection strip
+- NEW: Local network IP scanner (?dfaction=netscan, /24 TCP discovery, auto-detect base)
+- NEW: Port scanner (?dfaction=portscan, ranges like 1-1000, banner grab + service guess)
+- NEW: File search (?dfaction=search, recursive keyword/ext, 500-result cap)
+- NEW: Copy/Move (?dfaction=copy/move) + File info (?dfaction=info) + PHPInfo (?dfaction=phpinfo)
+- IMPROVE: Recursive delete/chmod (fixes rmdir failing on non-empty dirs), basename-safe mkdir/mkfile/rename/mass
+- IMPROVE: Command terminal shows cwd + active executor, escaped output, autofocus
+- IMPROVE: Offline-safe templates (local fallback if GitHub unreachable), 3-4s fetch timeouts
+- IMPROVE: Responsive CSS + scantable/fileinfo styles, new nav items NetScan/PortScan/Search/PHPInfo
+- SECURITY: htmlspecialchars on filenames/paths/cmd/crack/mail, escapeshellarg on symlink ln -s, ZipSlip block, __FILE__ self-destruct fix, email validation + header-injection strip
 
 ## DFS V2.2
 
 - Email bombing feature
 - Fixing missing delete function
-- Symlink: manually convert the target path string to base64 before submit
+- Symlink: manually convert target path string to base64 before submit
 - Symlink base64 insert (bypass detection)
 - Update notifier
 

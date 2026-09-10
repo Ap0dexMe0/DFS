@@ -1,74 +1,73 @@
 # DragonForceShell (DFS)
 
-A feature-rich, object-oriented PHP webshell with cross-platform privilege escalation auditing, file management, database tools, and network scanning capabilities.
+OOP Webshell lol
 
-**Author:** Eagle Eye
+Programmed and modified by Eagle Eye
+- Github: https://github.com/EagleTube
+- Youtube: https://www.youtube.com/c/EagleTube1337
 
-- GitHub: <https://github.com/EagleTube>
-- YouTube: <https://www.youtube.com/c/EagleTube1337>
-
-Referred: ivan-sincek (reverse shell) | 0x5a455553 (PermChg)
+Referred: ivan-sincek (revershell) | 0x5a455553 (PermChg)
 
 ## Disclaimer
 
-This shell is intended for **study and authorized security testing purposes only**. Please do not use it to harm any site. Any damage done to a website using this tool is your own responsibility.
+This shell is for study purpose only. Please don't harm any site using this webshell. Any damage done is your own responsibility.
+
+## DFS
+
+DragonForceShell - Version 2.5
+
+Password: `DF_Malaysia@1337$`
 
 ## Compatibility
 
-- PHP 7 and above
-- `allow_url_open` enabled
-
-## Default Password
-
-```
-DF_Malaysia@1337$
-```
+PHP 7 and above, allow_url_open enabled
 
 ## Features
 
-- **Symlink** — Manual to Auto
-- **Cpanel/WHM Brute-force**
-- **MySQL Access**
-- **OpenSSL Encryption**
-- **Self Destruct**
-- **Reverse Shell**
-- **Command Terminal**
-- **Mass Deface**
-- **Disk Available**
-- **Unzip / Zip**
-- **Permission Code** — Chmod + Recursive
-- **Mass Deletion** — Recursive
-- **Network IP Scanner** — Local /24 TCP discovery (`?dfaction=netscan`)
-- **Port Scanner** — Banner grab + service guess (`?dfaction=portscan`)
-- **File Search** — Recursive keyword/extension search (`?dfaction=search`)
-- **Copy / Move / File Info (MD5+SHA1) / PHPInfo**
-- **Auto LPE** — Cross-platform privilege escalation audit (Linux + Windows)
-
-  > **Linux:** SUID/SGID (GTFOBins), capabilities, kernel CVEs (DirtyPipe/PwnKit/DirtyCOW/etc.), writable passwd/shadow, sudo audit, Docker/LXC/K8s, cron, NFS, systemd services, Polkit
-  >
-  > **Windows:** Token privileges, unquoted service paths, writable service binaries, AlwaysInstallElevated, UAC bypass, autorun keys, scheduled tasks, kernel CVEs (PrintNightmare/HiveNightmare/etc.), stored credentials, DLL hijacking
-  >
-  > Each technique reports status (found/not_found/skipped) with a full evaluation log.
+- Symlink Manual to Auto
+- Cpanel/WHM Bruteforce
+- MySQL Access
+- OpenSSL Encryption
+- Self Destruct
+- ReverseShell
+- Command
+- Mass Deface
+- Disk Available
+- Unzip and Zip
+- Permission Code (Chmod + Recursive)
+- Mass Deletion (Recursive)
+- Local Network IP Scanner (?dfaction=netscan)
+- Port Scanner w/ banner grab (?dfaction=portscan)
+- Recursive File Search (?dfaction=search)
+- Copy / Move / File Info / PHPInfo
+- Auto LPE - Cross-platform privilege escalation audit (Linux + Windows)
+  - Linux: SUID/SGID + GTFOBins, capabilities, kernel CVEs (DirtyPipe/PwnKit/DirtyCOW etc), writable passwd/shadow, sudo audit, Docker/LXC/K8s, cron, NFS, systemd, Polkit
+  - Windows: token privs, unquoted service paths, writable service binaries, AlwaysInstallElevated, UAC bypass, autorun keys, scheduled tasks, kernel CVEs (PrintNightmare/HiveNightmare etc), stored creds, DLL hijacking
 
 ## Screenshots
 
-**Windows example run:**
-![Windows example](images/Screenshot_1.png)
+Example run on Windows
 
-**Directory listing:**
-![Directory listing](images/Screenshot_2.png)
+![](images/Screenshot_1.png)
 
-**File creation and upload area:**
-![File creation area](images/Screenshot_3.png)
+Directory Listing
 
-**MySQL database management:**
-![MySQL management](images/Screenshot_4.png)
+![](images/Screenshot_2.png)
 
-**Cpanel/WHM Brute-forcer:**
-![Cpanel brute-force](images/Screenshot_5.png)
+File creation and upload area
 
-## Upcoming Features (V2.6)
+![](images/Screenshot_3.png)
+
+MySQL Database simple management
+
+![](images/Screenshot_4.png)
+
+Cpanel/WHM Bruteforcer
+
+![](images/Screenshot_5.png)
+
+## Upcoming (V2.6)
 
 - UDP scanning + service fingerprinting
 - Ajax terminal + file editor with line numbers
-- Additional kernel CVEs and Windows exploit modules
+- More kernel CVEs and Windows exploit modules
