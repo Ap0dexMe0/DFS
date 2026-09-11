@@ -1,35 +1,67 @@
-<section class='footer dfs-card'>
-<h3>Quick Actions</h3>
+<section class="footer dfs-card">
+<h3><i class="fa-solid fa-bolt" style="color:var(--amber);margin-right:8px"></i>Quick Actions</h3>
 <table>
-<tr><td><label>Upload File</label></td><td><label>New Folder</label></td></tr>
-<tr><td><form action='' method='POST' enctype='multipart/form-data'>
-<input type="file" id="actual-btn" name='dffile' hidden required/>
-<label for="actual-btn" id='file-chosen'>Choose File</label>
-<input type='submit' name='dfupload' value='Upload'>
-</form></td><td>
-<form action='' method='POST'>
-<input type='text' name='newfolder' placeholder='folder name' required>
-<input type='submit' name='createfolder' value='Create'>
-</form></td></tr>
-<tr><td><label>New File</label></td><td><label>Encrypt String</label></td></tr>
-<tr><td><form action='' method='POST'>
-<input type='text' name='newfile' placeholder='file.txt' required>
-<input type='submit' name='createfile' value='Create'>
-</form></td><td>
-<form action='' method='POST'>
-<input type='text' name='encstr' placeholder='string to encrypt'>
-<input type='submit' name='toencstr' value='Encrypt'>
-</form></td></tr>
+<tr>
+  <td>
+    <label>Upload File</label>
+    <form action='' method='POST' enctype='multipart/form-data' style="display:flex;gap:6px;align-items:center">
+      <input type="file" id="actual-btn" name='dffile' hidden required/>
+      <label for="actual-btn" id='file-chosen'><i class="fa-solid fa-folder-open"></i> Choose File</label>
+      <input type='submit' name='dfupload' value='Upload'>
+    </form>
+  </td>
+  <td>
+    <label>New Folder</label>
+    <form action='' method='POST' style="display:flex;gap:6px;align-items:center">
+      <input type='text' name='newfolder' placeholder='folder name' required style="width:140px'>
+      <input type='submit' name='createfolder' value='Create'>
+    </form>
+  </td>
+</tr>
+<tr>
+  <td>
+    <label>New File</label>
+    <form action='' method='POST' style="display:flex;gap:6px;align-items:center">
+      <input type='text' name='newfile' placeholder='file.txt' required style="width:140px'>
+      <input type='submit' name='createfile' value='Create'>
+    </form>
+  </td>
+  <td>
+    <label>Encrypt String</label>
+    <form action='' method='POST' style="display:flex;gap:6px;align-items:center">
+      <input type='text' name='encstr' placeholder='string to encrypt' style="width:140px'>
+      <input type='submit' name='toencstr' value='Encrypt'>
+    </form>
+  </td>
+</tr>
 </table>
 </section>
 <script>
-const actualBtn = document.getElementById('actual-btn');
-const fileChosen = document.getElementById('file-chosen');
-if(actualBtn && fileChosen){
-  actualBtn.addEventListener('change', function(){
-    fileChosen.textContent = this.files[0].name
+(function(){
+  var actualBtn = document.getElementById('actual-btn');
+  var fileChosen = document.getElementById('file-chosen');
+  if(actualBtn && fileChosen){
+    actualBtn.addEventListener('change', function(){
+      fileChosen.innerHTML = '<i class="fa-solid fa-file"></i> ' + this.files[0].name;
+    });
+  }
+  // Mobile sidebar toggle
+  var toggle = document.getElementById('sidebarToggle');
+  var sidebar = document.getElementById('sidebar');
+  if(toggle && sidebar){
+    toggle.addEventListener('click', function(){
+      sidebar.classList.toggle('open');
+    });
+  }
+  // Close sidebar when clicking outside on mobile
+  document.addEventListener('click', function(e){
+    if(sidebar && window.innerWidth <= 900){
+      if(!sidebar.contains(e.target) && e.target !== toggle && !toggle.contains(e.target)){
+        sidebar.classList.remove('open');
+      }
+    }
   });
-}
+})();
 </script>
 <section class='eagle'>
 <img src='https://avatars.githubusercontent.com/u/87413459?v=4' onerror="this.style.display='none'">

