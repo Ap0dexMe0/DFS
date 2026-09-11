@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
-/* ===== DFS V2.5 theme — matches login.html ===== */
+/* ===== DFS V2.6 theme — matches login.html ===== */
 :root{
   --bg0:#000; --bg1:#171502; --glow:#2a2303;
   --gold:#FFD700; --gold-dim:#8a7600; --card-brd:#4a3d05;
@@ -115,8 +115,19 @@ input[type=submit]:hover,button:hover{filter:brightness(1.25)}
 section.sources{background:rgba(255,255,255,0.92);color:#111;max-height:550px;overflow:auto}
 #buttontoedit{width:min(400px,80%);display:flex;gap:10px;margin:10px auto}
 #buttontoedit a{flex:1}#buttontoedit button{width:100%;cursor:pointer;background:#000;color:var(--gold);font-family:inherit}
-section.editform textarea{width:100%;height:400px;color:var(--gold);background:#0a0a0a;font-size:14px;font-family:monospace;padding:12px}
+section.editform textarea.dfs-ed{width:100%;height:400px;color:#ddd;background:#000;font-size:12px;line-height:18px;font-family:monospace;padding:8px;border:none;outline:none;resize:vertical;overflow:auto;flex:1;min-width:0}
+section.editform .dfs-edwrap{display:flex;border:1px solid #4a3d05;border-radius:8px;overflow:hidden;background:#000;min-width:0}
+section.editform .dfs-gutter{padding:8px 8px 8px 10px;text-align:right;color:#666;font-size:12px;line-height:18px;font-family:monospace;user-select:none;overflow:hidden;background:#0d0b00;border-right:1px solid #4a3d05;min-width:38px;flex-shrink:0}
+section.editform .dfs-gutter-inner{will-change:transform}
+section.editform .dfs-edbar{color:#666;font-size:11px;margin:4px 0;font-family:monospace}
 section.editform input[type=submit]{width:100%;margin-top:8px}
+section.editform h3{color:var(--gold);text-align:center;margin:0 0 12px;font-size:15px;letter-spacing:2px}
+section.editform .dfs-edfile{color:#FFD700;font-size:13px;text-align:center;word-break:break-all}
+section.editform .dfs-edfile .ro{color:var(--red);font-size:11px}
+section.editform .dfs-edbtns{display:flex;gap:10px;margin-top:8px}
+section.editform .dfs-edbtns input[type=submit]{flex:2;margin-top:0;width:auto}
+section.editform .dfs-edbtns a{flex:1}
+section.editform .dfs-edbtns a button{width:100%;margin:0}
 
 /* symlink / crack / reverse / mass / db */
 section.symlinkarea table,.reverse table,.mass table,.databases table{margin:0 auto}

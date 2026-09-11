@@ -14,7 +14,7 @@ This shell is for study purpose only. Please don't harm any site using this webs
 
 ## DFS
 
-DragonForceShell - Version 2.5
+DragonForceShell - Version 2.6
 
 Password: `DF_Malaysia@1337$`
 
@@ -37,12 +37,14 @@ PHP 7 and above, allow_url_open enabled
 - Permission Code (Chmod + Recursive)
 - Mass Deletion (Recursive)
 - Local Network IP Scanner (?dfaction=netscan)
-- Port Scanner w/ banner grab (?dfaction=portscan)
+- Port Scanner w/ banner grab + UDP + fingerprint (?dfaction=portscan)
 - Recursive File Search (?dfaction=search)
 - Copy / Move / File Info / PHPInfo
+- Command terminal w/ ajax (no reload) + history
+- File editor w/ line numbers + Tab support
 - Auto LPE - Cross-platform privilege escalation audit (Linux + Windows)
-  - Linux: SUID/SGID + GTFOBins, capabilities, kernel CVEs (DirtyPipe/PwnKit/DirtyCOW etc), writable passwd/shadow, sudo audit, Docker/LXC/K8s, cron, NFS, systemd, Polkit
-  - Windows: token privs, unquoted service paths, writable service binaries, AlwaysInstallElevated, UAC bypass, autorun keys, scheduled tasks, kernel CVEs (PrintNightmare/HiveNightmare etc), stored creds, DLL hijacking
+  - Linux: SUID/SGID + GTFOBins, capabilities, kernel CVEs (DirtyPipe/PwnKit/DirtyCOW/LooneyTunables/runc/io_uring etc), writable passwd/shadow, sudo audit, Docker/LXC/K8s, cron, NFS, systemd, Polkit, container escape check
+  - Windows: token privs, unquoted service paths, writable service binaries, AlwaysInstallElevated, UAC bypass, autorun keys, scheduled tasks, kernel CVEs (PrintNightmare/HiveNightmare/CLFS/Win32k/AFD etc), stored creds, DLL hijacking, Potato advisor, vulnerable driver (BYOVD) check
 
 ## Screenshots
 
@@ -66,8 +68,7 @@ Cpanel/WHM Bruteforcer
 
 ![](images/Screenshot_5.png)
 
-## Upcoming (V2.6)
+## Upcoming (V2.7)
 
-- UDP scanning + service fingerprinting
-- Ajax terminal + file editor with line numbers
-- More kernel CVEs and Windows exploit modules
+- NetScan UDP mode + faster scanning
+- More kernel CVEs and exploit modules

