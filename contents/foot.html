@@ -1,35 +1,35 @@
-<section class="footer dfs-card">
-<h3><i class="fa-solid fa-bolt" style="color:var(--amber);margin-right:8px"></i>Quick Actions</h3>
+<section class="footer dfs-card" aria-label="Quick Actions">
+<h3><i class="fa-solid fa-bolt" style="color:var(--amber);margin-right:8px" aria-hidden="true"></i>Quick Actions</h3>
 <table>
 <tr>
   <td>
-    <label>Upload File</label>
+    <label for="actual-btn">Upload File</label>
     <form action='' method='POST' enctype='multipart/form-data' class='footer-form'>
-      <input type="file" id="actual-btn" name='dffile' style="display:none" required/>
-      <label for="actual-btn" id='file-chosen'><i class="fa-solid fa-folder-open"></i> Choose File</label>
+      <input type="file" id="actual-btn" name='dffile' style="display:none" required aria-describedby="file-chosen"/>
+      <label for="actual-btn" id='file-chosen' role="button" tabindex="0"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> Choose File</label>
       <input type='submit' name='dfupload' value='Upload'>
     </form>
   </td>
   <td>
-    <label>New Folder</label>
+    <label for="newfolder-input">New Folder</label>
     <form action='' method='POST' class='footer-form'>
-      <input type='text' name='newfolder' placeholder='folder name' required>
+      <input type='text' id="newfolder-input" name='newfolder' placeholder='folder name' required>
       <input type='submit' name='createfolder' value='Create'>
     </form>
   </td>
 </tr>
 <tr>
   <td>
-    <label>New File</label>
+    <label for="newfile-input">New File</label>
     <form action='' method='POST' class='footer-form'>
-      <input type='text' name='newfile' placeholder='file.txt' required>
+      <input type='text' id="newfile-input" name='newfile' placeholder='file.txt' required>
       <input type='submit' name='createfile' value='Create'>
     </form>
   </td>
   <td>
-    <label>Encrypt String</label>
+    <label for="encstr-input">Encrypt String</label>
     <form action='' method='POST' class='footer-form'>
-      <input type='text' name='encstr' placeholder='string to encrypt'>
+      <input type='text' id="encstr-input" name='encstr' placeholder='string to encrypt'>
       <input type='submit' name='toencstr' value='Encrypt'>
     </form>
   </td>
@@ -54,6 +54,7 @@
     toggle.addEventListener('click', function(e){
       e.stopPropagation();
       sidebar.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', sidebar.classList.contains('open'));
     });
   }
   // Close sidebar when clicking outside on mobile
@@ -61,12 +62,13 @@
     if(sidebar && window.innerWidth <= 900){
       if(!sidebar.contains(e.target) && e.target !== toggle && !toggle.contains(e.target)){
         sidebar.classList.remove('open');
+        if(toggle) toggle.setAttribute('aria-expanded', 'false');
       }
     }
   });
 })();
 </script>
-<section class='eagle'>
-<img src='https://avatars.githubusercontent.com/u/87413459?v=4' onerror="this.style.display='none'">
+<footer class='eagle' role="contentinfo">
+<img src='https://avatars.githubusercontent.com/u/87413459?v=4' alt="Author Avatar" width="42" height="42" onerror="this.style.display='none'">
 <p><b>DFS <span>V2.6</span></b> DragonForceShell &mdash; Search / Copy-Move / Info / Auto LPE / Hardened</p>
-</section>
+</footer>

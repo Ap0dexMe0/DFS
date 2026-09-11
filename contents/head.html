@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
 <title>DragonForceShell V2.6 [DFS]</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
 <script src="https://kit.fontawesome.com/d5fb3dfa0e.js" crossorigin="anonymous"></script>
@@ -11,14 +14,16 @@
 <style>%{style}%</style>
 </head>
 <body>
-<div class="dfs-shell-top">
-  <a class="dfs-brand" href="#">
-    <img src="https://raw.githubusercontent.com/EagleTube/DFS/main/images/logoritma.png" alt="" onerror="this.style.display='none'">
+<header class="dfs-shell-top" role="banner">
+  <a class="dfs-brand" href="#" aria-label="DragonForceShell Home">
+    <img src="https://raw.githubusercontent.com/EagleTube/DFS/main/images/logoritma.png" alt="DFS Logo" width="36" height="36" onerror="this.style.display='none'">
     <span class="dfs-brand-txt"><b>DFS <i>V2.6</i></b><small>DragonForceShell</small></span>
   </a>
-</div>
+</header>
 <!-- Mobile sidebar toggle -->
-<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation">
-  <i class="fa-solid fa-bars"></i>
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="sidebar">
+  <i class="fa-solid fa-bars" aria-hidden="true"></i>
 </button>
 %{body}%
+</body>
+</html>
