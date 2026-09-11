@@ -573,6 +573,12 @@ section.editform .dfs-edbtns input[type=submit] { flex: 2; margin-top: 0; width:
 section.editform .dfs-edbtns a { flex: 1; }
 section.editform .dfs-edbtns a button { width: 100%; margin: 0; }
 
+/* ===== PHP-output IDs ===== */
+#dfs-edform { display: flex; flex-direction: column; }
+#blacky { color: var(--gold); font-size: 13px; text-decoration: none; }
+#blacky:hover { color: var(--accent-secondary); }
+#symlable { color: #fff; font-size: 13px; padding: 5px; }
+
 /* ===== ===== SYMLINK / CRACK / REVERSE / MASS / DB ===== ===== */
 section.symlinkarea table,
 .reverse table,
@@ -797,6 +803,14 @@ section.footer input[type=text] { width: 200px; max-width: 100%; margin: 0; text
 section.footer input[type=submit] { width: auto; }
 section.footer form { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
 
+.footer-form { display: flex !important; gap: 6px; align-items: center; justify-content: center; flex-wrap: nowrap; }
+
+.footer-form input[type=text] { width: 130px; font-size: 12px; padding: 6px 8px; }
+
+.footer-form input[type=submit] { white-space: nowrap; font-size: 12px; padding: 6px 14px; }
+
+.footer-form label[for] { cursor: pointer; }
+
 #file-chosen {
   display: inline-block; border: 1px solid var(--card-brd); padding: 8px 14px; border-radius: var(--radius-sm);
   cursor: pointer; color: var(--gold); font-size: 12px; background: #111;
@@ -841,6 +855,8 @@ section.footer form { display: flex; gap: 10px; align-items: center; justify-con
   #cmd_area button { width: 100%; }
   .databases #fieldx, .databases #sqlcol { width: 100%; float: none; border: none; }
   section.footer form { flex-direction: column; align-items: center; }
+  .footer-form { flex-direction: column !important; gap: 4px !important; }
+  .footer-form input[type=text] { width: 100%; max-width: 200px; }
   #unzipping input[type=text] { width: min(300px, 80vw); }
 }
 

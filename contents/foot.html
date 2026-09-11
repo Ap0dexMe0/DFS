@@ -4,16 +4,16 @@
 <tr>
   <td>
     <label>Upload File</label>
-    <form action='' method='POST' enctype='multipart/form-data' style="display:flex;gap:6px;align-items:center">
-      <input type="file" id="actual-btn" name='dffile' hidden required/>
+    <form action='' method='POST' enctype='multipart/form-data' class='footer-form'>
+      <input type="file" id="actual-btn" name='dffile' style="display:none" required/>
       <label for="actual-btn" id='file-chosen'><i class="fa-solid fa-folder-open"></i> Choose File</label>
       <input type='submit' name='dfupload' value='Upload'>
     </form>
   </td>
   <td>
     <label>New Folder</label>
-    <form action='' method='POST' style="display:flex;gap:6px;align-items:center">
-      <input type='text' name='newfolder' placeholder='folder name' required style="width:140px'>
+    <form action='' method='POST' class='footer-form'>
+      <input type='text' name='newfolder' placeholder='folder name' required>
       <input type='submit' name='createfolder' value='Create'>
     </form>
   </td>
@@ -21,15 +21,15 @@
 <tr>
   <td>
     <label>New File</label>
-    <form action='' method='POST' style="display:flex;gap:6px;align-items:center">
-      <input type='text' name='newfile' placeholder='file.txt' required style="width:140px'>
+    <form action='' method='POST' class='footer-form'>
+      <input type='text' name='newfile' placeholder='file.txt' required>
       <input type='submit' name='createfile' value='Create'>
     </form>
   </td>
   <td>
     <label>Encrypt String</label>
-    <form action='' method='POST' style="display:flex;gap:6px;align-items:center">
-      <input type='text' name='encstr' placeholder='string to encrypt' style="width:140px'>
+    <form action='' method='POST' class='footer-form'>
+      <input type='text' name='encstr' placeholder='string to encrypt'>
       <input type='submit' name='toencstr' value='Encrypt'>
     </form>
   </td>
@@ -42,14 +42,17 @@
   var fileChosen = document.getElementById('file-chosen');
   if(actualBtn && fileChosen){
     actualBtn.addEventListener('change', function(){
-      fileChosen.innerHTML = '<i class="fa-solid fa-file"></i> ' + this.files[0].name;
+      if(this.files && this.files[0]){
+        fileChosen.innerHTML = '<i class="fa-solid fa-file"></i> ' + this.files[0].name;
+      }
     });
   }
   // Mobile sidebar toggle
   var toggle = document.getElementById('sidebarToggle');
   var sidebar = document.getElementById('sidebar');
   if(toggle && sidebar){
-    toggle.addEventListener('click', function(){
+    toggle.addEventListener('click', function(e){
+      e.stopPropagation();
       sidebar.classList.toggle('open');
     });
   }
