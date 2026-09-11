@@ -169,14 +169,53 @@ table.scantable tr:hover{background:rgba(255,255,255,0.05)}
 div.bombing textarea{width:100%;height:220px;padding:8px;color:#fff}
 div.bombing input[type=text]{width:100%;font-size:15px;padding:8px}
 
-/* destroy / rename / chmod / unzip */
+/* destroy / rename / chmod */
 #destroyer{text-align:center}
 #destroyer input[type=submit]{background:#a00;color:#fff;font-size:15px}
 #dfsrename table{margin:0 auto}
 #dfsrename td{color:#fff;font-size:13px;padding:5px}
 .modarea,.modarea input[type=text]{text-align:center}
-#unzipping label{color:#fff;font-size:13px}
 
+/* ── unzip / extract section ──────────────────────────────────────── */
+#unzipping{text-align:center}
+#unzipping h3{
+  color:var(--gold);font-size:15px;letter-spacing:2px;margin:0 0 14px;
+}
+/* filename row */
+#unzipping .dfs-uz-file{
+  color:#fff;font-size:13px;margin-bottom:14px;word-break:break-all;
+}
+/* format badge (ZIP / TAR / RAR …) */
+#unzipping .dfs-uz-badge{
+  display:inline-block;font-size:10px;letter-spacing:2px;
+  padding:2px 8px;border-radius:999px;margin-left:8px;vertical-align:middle;
+  background:rgba(255,215,0,0.15);border:1px solid var(--gold);color:var(--gold);
+}
+/* destination form */
+#unzipping form{display:inline-block;text-align:left}
+#unzipping table{margin:0 auto}
+#unzipping td{padding:7px 8px;vertical-align:middle}
+#unzipping label{color:var(--gold);font-size:13px;letter-spacing:1px;white-space:nowrap}
+#unzipping input[type=text]{
+  width:min(480px,70vw);font-size:13px;
+}
+#unzipping button.dfs-uz-btn{
+  display:block;margin:14px auto 0;
+  min-width:180px;font-size:14px;letter-spacing:2px;
+  background:linear-gradient(180deg,#1a6e1a,#0e3d0e);
+  border:1px solid #2e8b2e;padding:10px 22px;
+}
+#unzipping button.dfs-uz-btn:hover{
+  background:linear-gradient(180deg,#23922a,#145218);
+  box-shadow:0 0 14px rgba(105,224,31,0.3);
+}
+/* shell output / PharData error */
+#unzipping pre.dfs-uz-out{
+  text-align:left;background:#0a0a0a;color:var(--green);
+  font-size:11px;padding:10px 12px;border-radius:8px;
+  max-height:220px;overflow:auto;margin:12px auto 0;
+  width:min(900px,96%);border:1px solid #1a3a1a;
+}
 /* LPE section */
 section.lpe{width:min(1100px,94%);margin:16px auto;display:block;color:var(--ink);
   background:rgba(0,0,0,0.65);border:1px solid var(--card-brd);border-radius:14px;padding:16px;}
