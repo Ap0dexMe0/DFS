@@ -36,8 +36,6 @@ PHP 7 and above, allow_url_open enabled
 - Unzip and Zip
 - Permission Code (Chmod + Recursive)
 - Mass Deletion (Recursive)
-- Local Network IP Scanner (?dfaction=netscan)
-- Port Scanner w/ banner grab + UDP + fingerprint (?dfaction=portscan)
 - Recursive File Search (?dfaction=search)
 - Copy / Move / File Info / PHPInfo
 - Command terminal w/ ajax (no reload) + history
@@ -70,5 +68,4 @@ Cpanel/WHM Bruteforcer
 
 ## Upcoming (V2.7)
 
-- NetScan UDP mode + faster scanning
 - More kernel CVEs and exploit modules

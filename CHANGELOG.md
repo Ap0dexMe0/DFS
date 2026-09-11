@@ -64,14 +64,12 @@ Windows techniques (10 modules):
 
 ## DFS V2.3
 
-- NEW: Local network IP scanner (?dfaction=netscan, /24 TCP discovery, auto-detect base)
-- NEW: Port scanner (?dfaction=portscan, ranges like 1-1000, banner grab + service guess)
 - NEW: File search (?dfaction=search, recursive keyword/ext, 500-result cap)
 - NEW: Copy/Move (?dfaction=copy/move) + File info (?dfaction=info) + PHPInfo (?dfaction=phpinfo)
 - IMPROVE: Recursive delete/chmod (fixes rmdir failing on non-empty dirs), basename-safe mkdir/mkfile/rename/mass
 - IMPROVE: Command terminal shows cwd + active executor, escaped output, autofocus
 - IMPROVE: Offline-safe templates (local fallback if GitHub unreachable), 3-4s fetch timeouts
-- IMPROVE: Responsive CSS + scantable/fileinfo styles, new nav items NetScan/PortScan/Search/PHPInfo
+- IMPROVE: Responsive CSS + scantable/fileinfo styles, new nav items Search/PHPInfo
 - SECURITY: htmlspecialchars on filenames/paths/cmd/crack/mail, escapeshellarg on symlink ln -s, ZipSlip block, __FILE__ self-destruct fix, email validation + header-injection strip
 
 ## DFS V2.2
