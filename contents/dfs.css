@@ -254,6 +254,35 @@ section.footer form{display:flex;gap:8px;align-items:center;justify-content:cent
 .eagle p{color:#fff;font-size:11px;letter-spacing:1px;margin:0}
 .eagle p b{color:var(--blue);letter-spacing:2px}.eagle p span{color:var(--red)}
 
+/* ── v2.6 template-driven feature UI ────────────────────────────── */
+/* ajax terminal (others.html segment [8]) */
+#ajaxterm{background:#000;border:1px solid var(--card-brd);border-radius:8px;padding:10px;
+  max-height:300px;overflow-y:auto;font-family:monospace;font-size:12px;color:#ddd;margin-bottom:8px}
+#ajaxterm .dfs-ajax-hint{color:#666}
+#ajaxterm .dfs-ajax-cmd{color:var(--gold)}
+#ajaxterm .dfs-ajax-out{margin:2px 0 8px;color:var(--green);white-space:pre-wrap}
+#ajaxterm .dfs-ajax-err{color:var(--red)}
+#ajaxform{margin:0 0 8px}
+#cmd_area .dfs-cwd{color:var(--gold);font-size:13px;margin:0 0 8px}
+#cmd_area details{margin-top:8px}
+#cmd_area summary{cursor:pointer;color:#666;font-size:12px}
+#cmd_area .dfs-tip{color:#666;font-size:12px}
+/* phpinfo dark wrapper (others.html segment [7]) */
+.pi-dark{background:#000!important;color:var(--gold);border-radius:10px;padding:10px;overflow:auto;max-height:600px;text-align:left}
+.pi-dark table{width:100%;border-collapse:collapse;background:#000!important;color:#ddd;margin-bottom:12px}
+.pi-dark td,.pi-dark th{border:1px solid var(--card-brd)!important;padding:5px 8px;font-size:12px;background:#000!important;color:#ddd!important}
+.pi-dark tr.h td,.pi-dark tr.h th{background:#1a1500!important;color:var(--gold)!important;font-weight:bold}
+.pi-dark td.e,.pi-dark th.e{background:#0d0b00!important;color:var(--gold)!important}
+.pi-dark td.v{background:#000!important;color:#ddd!important;word-break:break-all}
+.pi-dark a{color:var(--green)!important}
+.pi-dark font{color:#ddd!important}
+.pi-dark hr{border-color:var(--card-brd)}
+.pi-dark h1,.pi-dark h2{color:var(--gold)!important}
+/* LPE intro + output (others.html segment [6]) */
+.lpe-intro{color:#ccc;font-size:13px;line-height:1.7;background:rgba(0,0,0,0.35);
+  border-left:3px solid var(--gold);padding:10px 14px;border-radius:0 8px 8px 0;margin:0 0 14px}
+.lpe-output{margin-top:14px}
+
 @media (max-width:900px){
   div.directory,section.editform,.searchbox,.fileinfo{width:98%}
   #tbname{max-width:140px}
